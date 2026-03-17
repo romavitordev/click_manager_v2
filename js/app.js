@@ -500,8 +500,8 @@ function setupSidebar() {
 function setupAuth() {
     const loginForm = document.getElementById("loginForm");
     const demoCredentials = {
-        email: "demo@clickmanager.com",
-        password: "123456"
+        email: "admin@gmail.com",
+        password: "admin123"
     };
 
     if (!loginForm) {
@@ -543,7 +543,7 @@ function setupAuth() {
 
         state.currentUser = {
             role: "photographer",
-            fullName: "Usuário Demo",
+            fullName: "Admin",
             email: demoCredentials.email
         };
         persistCurrentUser();
