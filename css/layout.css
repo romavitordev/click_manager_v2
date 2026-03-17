@@ -1,17 +1,11 @@
-.auth-shell,
-.auth-home,
-.register-shell,
+﻿.auth-shell,
 .app-shell,
-.public-shell {
+.public-shell,
+.register-shell {
     min-height: 100vh;
 }
 
-.auth-shell {
-    display: grid;
-    grid-template-columns: 1fr;
-}
-
-.auth-home,
+.auth-shell,
 .register-shell {
     display: grid;
     grid-template-columns: 1fr;
@@ -44,7 +38,7 @@
 }
 
 .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .public-shell {
@@ -62,12 +56,8 @@
         grid-template-columns: minmax(0, 1.1fr) minmax(420px, 520px);
     }
 
-    .auth-home {
-        grid-template-columns: minmax(0, 1.25fr) minmax(360px, 460px);
-    }
-
     .register-shell {
-        grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.1fr);
+        grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.08fr);
     }
 
     .app-content {
@@ -75,10 +65,6 @@
     }
 
     .content-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .stats-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 

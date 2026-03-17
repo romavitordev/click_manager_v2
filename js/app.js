@@ -220,6 +220,7 @@ function registerUserAccount(payload) {
         city: payload.city?.trim() || "",
         instagram: payload.instagram?.trim() || "",
         specialty: payload.specialty?.trim() || "",
+        accessStage: payload.accessStage?.trim() || "",
         shootType: payload.shootType?.trim() || "",
         preferredDate: payload.preferredDate?.trim() || "",
         whatsapp: payload.whatsapp?.trim() || ""
@@ -233,12 +234,14 @@ function registerUserAccount(payload) {
             clientEmail: email,
             clientName: fullName,
             photographerName: newUser.photographerName || "FotÃ³grafo responsÃ¡vel",
-            shareCode: newUser.shareCode || payload.shootType?.trim() || "SolicitaÃ§Ã£o direta",
+            shareCode: newUser.shareCode || payload.accessStage?.trim() || payload.shootType?.trim() || "SolicitaÃ§Ã£o direta",
             status: "Pendente",
             signedAt: null,
-            title: payload.shootType?.trim()
-                ? `Contrato para ${payload.shootType.trim().toLowerCase()}`
-                : "Contrato de prestaÃ§Ã£o de serviÃ§o fotogrÃ¡fico"
+            title: payload.accessStage?.trim()
+                ? `Fluxo do cliente: ${payload.accessStage.trim().toLowerCase()}`
+                : payload.shootType?.trim()
+                    ? `Contrato para ${payload.shootType.trim().toLowerCase()}`
+                    : "Contrato de prestaÃ§Ã£o de serviÃ§o fotogrÃ¡fico"
         };
         state.contracts.push(contract);
         writeStorage(STORAGE_KEYS.contracts, state.contracts);
@@ -541,15 +544,25 @@ function setupRegisterWizard() {
         return;
     }
 
+    const params = new URLSearchParams(window.location.search);
+    const inviteFromPhotographer = ["client", "1", "true", "photographer"].includes((params.get("role") || params.get("client") || params.get("invite") || params.get("source") || "").toLowerCase());
+    const incomingAccessStage = (params.get("stage") || params.get("access") || "").trim();
+
     const roleStep = {
         name: "role",
         group: "Perfil",
-        title: "Quem vai usar a plataforma?",
-        hint: "Escolha o perfil para montar o restante do cadastro.",
+        title: inviteFromPhotographer ? "Você é cliente?" : "Quem vai usar a plataforma?",
+        hint: inviteFromPhotographer
+            ? "Este acesso parece ter sido enviado por um fotógrafo. Confirme seu perfil para continuar."
+            : "Escolha o perfil para montar o restante do cadastro.",
         type: "choice",
         options: [
-            { value: "photographer", title: "Sou fotógrafo", description: "Quero organizar agenda, contratos, pagamentos e entregas." },
-            { value: "client", title: "Sou cliente", description: "Quero acompanhar um ensaio, contrato e acesso à galeria." }
+            inviteFromPhotographer
+                ? { value: "client", title: "Sim, sou cliente", description: "Quero continuar com o acesso que o fotógrafo me enviou.", icon: "CL" }
+                : { value: "photographer", title: "Sou fotógrafo", description: "Quero organizar agenda, contratos, pagamentos e entregas.", icon: "PH" },
+            inviteFromPhotographer
+                ? { value: "photographer", title: "Não, sou fotógrafo", description: "Quero criar uma conta de gestão e operar meus ensaios.", icon: "PH" }
+                : { value: "client", title: "Sou cliente", description: "Quero acompanhar um ensaio, contrato e acesso à galeria.", icon: "CL" }
         ]
     };
 
@@ -570,6 +583,19 @@ function setupRegisterWizard() {
         { name: "email", group: "Acesso", title: "Qual e-mail deve receber os acessos?", hint: "Esse será o seu login para contrato e galeria.", type: "email", placeholder: "cliente@email.com", autocomplete: "email" },
         { name: "password", group: "Segurança", title: "Crie uma senha para acessar sua área.", hint: "Use pelo menos 6 caracteres.", type: "password", placeholder: "Digite sua senha", autocomplete: "new-password" },
         { name: "photographerName", group: "Referência", title: "Quem é o fotógrafo responsável pelo seu ensaio?", hint: "Informe o nome do profissional ou estúdio.", type: "text", placeholder: "Ex.: Helena Duarte" },
+        {
+            name: "accessStage",
+            group: "Contexto",
+            title: "Como esse acesso chegou até você?",
+            hint: "Selecione o estágio do atendimento em que você recebeu este link.",
+            type: "choice",
+            options: [
+                { value: "Ensaio pronto", title: "Recebi uma galeria pronta", description: "Já existe um ensaio finalizado ou material para visualizar.", icon: "EN" },
+                { value: "Aguardando confirmação", title: "Falta confirmar agendamento", description: "O fotógrafo iniciou o atendimento, mas a data ainda será confirmada.", icon: "AG" },
+                { value: "Assinatura de contrato", title: "Preciso assinar contrato", description: "Recebi o acesso principalmente para formalizar a contratação.", icon: "CT" },
+                { value: "Atendimento direto", title: "Foi um envio direto", description: "O fotógrafo já sabe que sou cliente e me enviou este acesso para começar.", icon: "LK" }
+            ]
+        },
         { name: "shootType", group: "Ensaio", title: "Que tipo de ensaio você está contratando?", hint: "Ex.: casal, gestante, branding, evento, formatura.", type: "select", options: ["Casal", "Gestante", "Família", "Branding", "Evento", "Formatura", "Aniversário", "Outro"] },
         { name: "preferredDate", group: "Agenda", title: "Você já tem uma data desejada?", hint: "Opcional, mas ajuda a organizar o primeiro contato.", type: "date", optional: true },
         { name: "whatsapp", group: "Contato", title: "Qual WhatsApp deve receber avisos do ensaio?", hint: "Opcional para facilitar lembretes e confirmações.", type: "tel", placeholder: "(11) 99999-9999", autocomplete: "tel", optional: true },
@@ -578,13 +604,21 @@ function setupRegisterWizard() {
 
     const wizardState = {
         values: {
-            role: "photographer"
+            role: "",
+            accessStage: incomingAccessStage
         },
         index: 0
     };
 
     function getSteps() {
-        return [roleStep].concat(wizardState.values.role === "client" ? clientSteps : photographerSteps);
+        const resolvedRole = wizardState.values.role || (inviteFromPhotographer ? "client" : "photographer");
+        if (resolvedRole === "client") {
+            const steps = incomingAccessStage
+                ? clientSteps.filter((step) => step.name !== "accessStage")
+                : clientSteps;
+            return [roleStep].concat(steps);
+        }
+        return [roleStep].concat(photographerSteps);
     }
 
     function getCurrentStep() {
@@ -600,8 +634,11 @@ function setupRegisterWizard() {
                     data-choice-name="${step.name}"
                     data-choice-value="${option.value}"
                 >
-                    <strong>${option.title}</strong>
-                    <span>${option.description}</span>
+                    <span class="wizard-option__icon">${option.icon || "OK"}</span>
+                    <span class="wizard-option__body">
+                        <strong>${option.title}</strong>
+                        <span>${option.description}</span>
+                    </span>
                 </button>
             `).join("") + '</div>';
 
