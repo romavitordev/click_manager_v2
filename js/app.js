@@ -1,4 +1,4 @@
-const STORAGE_KEYS = {
+﻿const STORAGE_KEYS = {
     clients: "click_manager_clients",
     sessions: "click_manager_sessions",
     payments: "click_manager_payments",
@@ -21,7 +21,7 @@ const defaultSettings = {
     sessionPrice: 0,
     monthlyAverageSessions: 0,
     bookingDeposit: 30,
-    acceptedPayments: "Pix, Cartão, Boleto",
+    acceptedPayments: "Pix, CartÃ£o, Boleto",
     paymentDeadline: "7 dias",
     publicName: "",
     publicBio: "",
@@ -82,7 +82,7 @@ const photoPalette = [
 
 const pricePerPhoto = 35;
 const defaultSlots = ["09:00", "11:30", "15:00", "17:00"];
-const weekdayNames = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+const weekdayNames = ["Domingo", "Segunda", "TerÃ§a", "Quarta", "Quinta", "Sexta", "SÃ¡bado"];
 
 function createDefaultAvailability() {
     return {
@@ -156,6 +156,108 @@ function persistSettings() {
     writeStorage(STORAGE_KEYS.settings, state.settings);
 }
 
+function registerUserAccount(payload) {
+    const role = payload.role;
+    const fullName = payload.fullName.trim();
+    const email = payload.email.trim();
+    const password = payload.password.trim();
+
+    if (!fullName || !email || !password || password.length < 6 || !email.includes("@")) {
+        return {
+            ok: false,
+            message: "Verifique nome, e-mail e senha. A senha precisa ter pelo menos 6 caracteres.",
+            color: "var(--danger)"
+        };
+    }
+
+    if (state.users.some((item) => item.email === email)) {
+        return {
+            ok: false,
+            message: "JÃ¡ existe uma conta com este e-mail.",
+            color: "var(--danger)"
+        };
+    }
+
+    if (role === "photographer") {
+        const sessionPrice = Number(payload.sessionPrice || 0);
+        const monthlyAverageSessions = Number(payload.monthlyAverageSessions || 0);
+        if (sessionPrice <= 0 || monthlyAverageSessions <= 0) {
+            return {
+                ok: false,
+                message: "Informe valor do ensaio e mÃ©dia mensal para configurar o painel.",
+                color: "var(--danger)"
+            };
+        }
+
+        state.profile = {
+            sessionPrice,
+            monthlyAverageSessions
+        };
+        writeStorage(STORAGE_KEYS.profile, state.profile);
+        state.settings = {
+            ...state.settings,
+            professionalName: fullName,
+            publicName: payload.publicName?.trim() || fullName,
+            studioName: payload.studioName?.trim() || state.settings.studioName,
+            city: payload.city?.trim() || state.settings.city,
+            instagram: payload.instagram?.trim() || state.settings.instagram,
+            sessionPrice,
+            monthlyAverageSessions
+        };
+        persistSettings();
+    }
+
+    const newUser = {
+        id: Date.now(),
+        role,
+        fullName,
+        email,
+        password,
+        photographerName: payload.photographerName?.trim() || "",
+        shareCode: payload.shareCode?.trim() || "",
+        studioName: payload.studioName?.trim() || "",
+        publicName: payload.publicName?.trim() || "",
+        city: payload.city?.trim() || "",
+        instagram: payload.instagram?.trim() || "",
+        specialty: payload.specialty?.trim() || "",
+        shootType: payload.shootType?.trim() || "",
+        preferredDate: payload.preferredDate?.trim() || "",
+        whatsapp: payload.whatsapp?.trim() || ""
+    };
+    state.users.push(newUser);
+    writeStorage(STORAGE_KEYS.users, state.users);
+
+    if (role === "client") {
+        const contract = {
+            id: `CTR-${Date.now()}`,
+            clientEmail: email,
+            clientName: fullName,
+            photographerName: newUser.photographerName || "FotÃ³grafo responsÃ¡vel",
+            shareCode: newUser.shareCode || payload.shootType?.trim() || "SolicitaÃ§Ã£o direta",
+            status: "Pendente",
+            signedAt: null,
+            title: payload.shootType?.trim()
+                ? `Contrato para ${payload.shootType.trim().toLowerCase()}`
+                : "Contrato de prestaÃ§Ã£o de serviÃ§o fotogrÃ¡fico"
+        };
+        state.contracts.push(contract);
+        writeStorage(STORAGE_KEYS.contracts, state.contracts);
+        return {
+            ok: true,
+            user: newUser,
+            message: "Cadastro do cliente concluÃ­do. FaÃ§a login para assinar o contrato e acessar seus ensaios.",
+            color: "var(--success)"
+        };
+    }
+
+    return {
+        ok: true,
+        user: newUser,
+        message: "Cadastro criado com sucesso. O painel financeiro jÃ¡ foi configurado com sua mÃ©dia inicial.",
+        color: "var(--success)"
+    };
+}
+
 function getCurrentClient() {
     return state.currentUser?.role === "client" ? state.currentUser : null;
 }
@@ -169,7 +271,7 @@ function getCurrentClientContract() {
 }
 
 function getPhotographerDisplayName() {
-    return state.settings.publicName || state.settings.professionalName || "Fotógrafo";
+    return state.settings.publicName || state.settings.professionalName || "FotÃ³grafo";
 }
 
 function getSessionsForDate(dateString) {
@@ -363,195 +465,285 @@ function setupSidebar() {
 }
 
 function setupAuth() {
-    const tabs = document.querySelectorAll("[data-auth-tab]");
-    const forms = {
-        login: document.getElementById("loginForm"),
-        register: document.getElementById("registerForm")
-    };
-    const roleSelect = document.getElementById("registerRole");
-    const photographerFields = document.getElementById("photographerFields");
-    const clientFields = document.getElementById("clientFields");
+    const loginForm = document.getElementById("loginForm");
     const demoCredentials = {
         email: "demo@clickmanager.com",
         password: "123456"
     };
 
-    if (!forms.login || !forms.register || tabs.length === 0) {
+    if (!loginForm) {
         return;
     }
 
-    function setActiveAuthMode(mode) {
-        tabs.forEach((tab) => {
-            const isActive = tab.dataset.authTab === mode;
-            tab.classList.toggle("is-active", isActive);
-            tab.setAttribute("aria-selected", String(isActive));
-        });
+    loginForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const email = loginForm.elements.email.value.trim();
+        const password = loginForm.elements.password.value.trim();
+        const feedback = loginForm.querySelector(".form-feedback");
 
-        Object.entries(forms).forEach(([key, form]) => {
-            const isActive = key === mode;
-            form.classList.toggle("is-active", isActive);
-            form.hidden = !isActive;
-        });
-    }
-
-    function updateRegisterRoleView() {
-        if (!roleSelect || !photographerFields || !clientFields || !forms.register) {
-            return;
-        }
-        const isPhotographer = roleSelect.value === "photographer";
-        photographerFields.hidden = !isPhotographer;
-        clientFields.hidden = isPhotographer;
-        ["sessionPrice", "monthlyAverageSessions"].forEach((name) => {
-            const input = forms.register.elements[name];
-            if (input) {
-                input.required = isPhotographer;
-            }
-        });
-        ["photographerName", "shareCode"].forEach((name) => {
-            const input = forms.register.elements[name];
-            if (input) {
-                input.required = !isPhotographer;
-            }
-        });
-    }
-
-    roleSelect?.addEventListener("change", updateRegisterRoleView);
-    updateRegisterRoleView();
-    setActiveAuthMode("login");
-
-    tabs.forEach((tab) => {
-        tab.addEventListener("click", () => {
-            const mode = tab.dataset.authTab;
-            if (mode !== "login" && mode !== "register") {
-                return;
-            }
-            setActiveAuthMode(mode);
-        });
-    });
-
-    Object.values(forms).forEach((form) => {
-        if (!form) {
+        if (!email || !password || password.length < 6 || !email.includes("@")) {
+            feedback.textContent = "Verifique e-mail e senha. A senha precisa ter pelo menos 6 caracteres.";
+            feedback.style.color = "var(--danger)";
             return;
         }
 
-        form.addEventListener("submit", (event) => {
-            event.preventDefault();
-            const email = form.elements.email.value.trim();
-            const password = form.elements.password.value.trim();
-            const feedback = form.querySelector(".form-feedback");
-
-            if (!email || !password || password.length < 6 || !email.includes("@")) {
-                feedback.textContent = "Verifique e-mail e senha. A senha precisa ter pelo menos 6 caracteres.";
+        if (email !== demoCredentials.email || password !== demoCredentials.password) {
+            const user = state.users.find((item) => item.email === email && item.password === password);
+            if (!user) {
+                feedback.textContent = "Use o login de demonstração ou um cadastro criado na plataforma.";
                 feedback.style.color = "var(--danger)";
                 return;
             }
-
-            if (form.id === "loginForm") {
-                if (email !== demoCredentials.email || password !== demoCredentials.password) {
-                    const user = state.users.find((item) => item.email === email && item.password === password);
-                    if (!user) {
-                        feedback.textContent = "Use o login de demonstração ou um cadastro criado na plataforma.";
-                        feedback.style.color = "var(--danger)";
-                        return;
-                    }
-                    state.currentUser = user;
-                    persistCurrentUser();
-                    feedback.style.color = "var(--success)";
-                    feedback.textContent = user.role === "client"
-                        ? "Acesso do cliente validado. Redirecionando."
-                        : "Login validado. Redirecionando para o dashboard.";
-                    window.setTimeout(() => {
-                        window.location.href = user.role === "client"
-                            ? "./pages/meus-contratos.html"
-                            : "./pages/dashboard.html";
-                    }, 900);
-                    return;
-                }
-
-                state.currentUser = {
-                    role: "photographer",
-                    fullName: "Usuário Demo",
-                    email: demoCredentials.email
-                };
-                persistCurrentUser();
-                feedback.style.color = "var(--success)";
-                feedback.textContent = "Login validado. Redirecionando para o dashboard.";
-            } else {
-                const role = form.elements.role.value;
-                const fullName = form.elements.fullName.value.trim();
-                if (state.users.some((item) => item.email === email)) {
-                    feedback.textContent = "Já existe uma conta com este e-mail.";
-                    feedback.style.color = "var(--danger)";
-                    return;
-                }
-
-                if (role === "photographer") {
-                    const sessionPrice = Number(form.elements.sessionPrice?.value || 0);
-                    const monthlyAverageSessions = Number(form.elements.monthlyAverageSessions?.value || 0);
-                    if (sessionPrice <= 0 || monthlyAverageSessions <= 0) {
-                        feedback.textContent = "Informe o valor do ensaio e a média mensal para configurar o painel.";
-                        feedback.style.color = "var(--danger)";
-                        return;
-                    }
-
-                    state.profile = {
-                        sessionPrice,
-                        monthlyAverageSessions
-                    };
-                    writeStorage(STORAGE_KEYS.profile, state.profile);
-                    state.settings = {
-                        ...state.settings,
-                        professionalName: fullName,
-                        publicName: fullName,
-                        sessionPrice,
-                        monthlyAverageSessions
-                    };
-                    persistSettings();
-                }
-
-                const newUser = {
-                    id: Date.now(),
-                    role,
-                    fullName,
-                    email,
-                    password,
-                    photographerName: form.elements.photographerName?.value.trim() || "",
-                    shareCode: form.elements.shareCode?.value.trim() || ""
-                };
-                state.users.push(newUser);
-                writeStorage(STORAGE_KEYS.users, state.users);
-
-                if (role === "client") {
-                    const contract = {
-                        id: `CTR-${Date.now()}`,
-                        clientEmail: email,
-                        clientName: fullName,
-                        photographerName: newUser.photographerName || "Fotógrafo responsável",
-                        shareCode: newUser.shareCode || "Link compartilhado",
-                        status: "Pendente",
-                        signedAt: null,
-                        title: "Contrato de prestação de serviço fotográfico"
-                    };
-                    state.contracts.push(contract);
-                    writeStorage(STORAGE_KEYS.contracts, state.contracts);
-                    feedback.textContent = "Cadastro do cliente concluído. Faça login para assinar o contrato e acessar seus ensaios.";
-                } else {
-                    feedback.textContent = "Cadastro criado com sucesso. O painel financeiro já foi configurado com sua média inicial.";
-                }
-
-                feedback.style.color = "var(--success)";
-                setActiveAuthMode("login");
-            }
-
+            state.currentUser = user;
+            persistCurrentUser();
+            feedback.style.color = "var(--success)";
+            feedback.textContent = user.role === "client"
+                ? "Acesso do cliente validado. Redirecionando."
+                : "Login validado. Redirecionando para o dashboard.";
             window.setTimeout(() => {
-                if (form.id === "loginForm") {
-                    window.location.href = "./pages/dashboard.html";
-                }
+                window.location.href = user.role === "client"
+                    ? "./pages/meus-contratos.html"
+                    : "./pages/dashboard.html";
             }, 900);
-        });
+            return;
+        }
+
+        state.currentUser = {
+            role: "photographer",
+            fullName: "Usuário Demo",
+            email: demoCredentials.email
+        };
+        persistCurrentUser();
+        feedback.style.color = "var(--success)";
+        feedback.textContent = "Login validado. Redirecionando para o dashboard.";
+
+        window.setTimeout(() => {
+            window.location.href = "./pages/dashboard.html";
+        }, 900);
     });
 }
 
+function setupRegisterWizard() {
+    const form = document.getElementById("registerWizardForm");
+    const inputRoot = document.getElementById("registerWizardInput");
+    const feedback = document.getElementById("registerWizardFeedback");
+    const questionGroup = document.getElementById("registerQuestionGroup");
+    const questionTitle = document.getElementById("registerQuestionTitle");
+    const questionHint = document.getElementById("registerQuestionHint");
+    const progressBar = document.getElementById("registerProgressBar");
+    const stepLabel = document.getElementById("registerStepLabel");
+    const stepCounter = document.getElementById("registerStepCounter");
+    const prevButton = document.getElementById("registerPrevBtn");
+    const nextButton = document.getElementById("registerNextBtn");
+    const submitButton = document.getElementById("registerSubmitBtn");
+
+    if (!form || !inputRoot || !feedback || !questionGroup || !questionTitle || !questionHint || !progressBar || !stepLabel || !stepCounter || !prevButton || !nextButton || !submitButton) {
+        return;
+    }
+
+    const roleStep = {
+        name: "role",
+        group: "Perfil",
+        title: "Quem vai usar a plataforma?",
+        hint: "Escolha o perfil para montar o restante do cadastro.",
+        type: "choice",
+        options: [
+            { value: "photographer", title: "Sou fotógrafo", description: "Quero organizar agenda, contratos, pagamentos e entregas." },
+            { value: "client", title: "Sou cliente", description: "Quero acompanhar um ensaio, contrato e acesso à galeria." }
+        ]
+    };
+
+    const photographerSteps = [
+        { name: "fullName", group: "Identidade", title: "Como você quer ser identificado no sistema?", hint: "Esse nome será usado internamente na conta.", type: "text", placeholder: "Ex.: Helena Duarte", autocomplete: "name" },
+        { name: "publicName", group: "Marca", title: "Qual nome público aparece para seus clientes?", hint: "Pode ser seu nome artístico ou o nome do estúdio.", type: "text", placeholder: "Ex.: Helena Duarte Fotografia" },
+        { name: "email", group: "Acesso", title: "Qual e-mail vai centralizar os acessos?", hint: "Use um e-mail profissional que você consulta com frequência.", type: "email", placeholder: "voce@studio.com", autocomplete: "email" },
+        { name: "password", group: "Segurança", title: "Crie uma senha de acesso.", hint: "Use pelo menos 6 caracteres.", type: "password", placeholder: "Digite sua senha", autocomplete: "new-password" },
+        { name: "specialty", group: "Nicho", title: "Qual é o seu nicho principal?", hint: "Ex.: casamentos, retratos, branding, newborn, eventos.", type: "select", options: ["Casamentos", "Retratos", "Família", "Branding", "Eventos", "Newborn", "Moda", "Outro"] },
+        { name: "city", group: "Atendimento", title: "Em qual cidade você atende com mais frequência?", hint: "Isso ajuda a contextualizar seu perfil.", type: "text", placeholder: "Ex.: São Paulo - SP" },
+        { name: "sessionPrice", group: "Financeiro", title: "Quanto você cobra, em média, por ensaio?", hint: "Use um valor aproximado do ticket principal.", type: "number", placeholder: "1200", min: "0", step: "0.01" },
+        { name: "monthlyAverageSessions", group: "Ritmo", title: "Quantos ensaios você faz por mês, em média?", hint: "Vamos usar isso para estimar metas e previsões.", type: "number", placeholder: "8", min: "0", step: "1" },
+        { name: "instagram", group: "Presença", title: "Qual Instagram você usa para divulgar o trabalho?", hint: "Opcional, mas útil para preencher seu perfil.", type: "text", placeholder: "@seuinstagram", optional: true }
+    ];
+
+    const clientSteps = [
+        { name: "fullName", group: "Identificação", title: "Qual é o seu nome completo?", hint: "Vamos usar esse nome no contrato e nos acessos.", type: "text", placeholder: "Ex.: Marina Souza", autocomplete: "name" },
+        { name: "email", group: "Acesso", title: "Qual e-mail deve receber os acessos?", hint: "Esse será o seu login para contrato e galeria.", type: "email", placeholder: "cliente@email.com", autocomplete: "email" },
+        { name: "password", group: "Segurança", title: "Crie uma senha para acessar sua área.", hint: "Use pelo menos 6 caracteres.", type: "password", placeholder: "Digite sua senha", autocomplete: "new-password" },
+        { name: "photographerName", group: "Referência", title: "Quem é o fotógrafo responsável pelo seu ensaio?", hint: "Informe o nome do profissional ou estúdio.", type: "text", placeholder: "Ex.: Helena Duarte" },
+        { name: "shootType", group: "Ensaio", title: "Que tipo de ensaio você está contratando?", hint: "Ex.: casal, gestante, branding, evento, formatura.", type: "select", options: ["Casal", "Gestante", "Família", "Branding", "Evento", "Formatura", "Aniversário", "Outro"] },
+        { name: "preferredDate", group: "Agenda", title: "Você já tem uma data desejada?", hint: "Opcional, mas ajuda a organizar o primeiro contato.", type: "date", optional: true },
+        { name: "whatsapp", group: "Contato", title: "Qual WhatsApp deve receber avisos do ensaio?", hint: "Opcional para facilitar lembretes e confirmações.", type: "tel", placeholder: "(11) 99999-9999", autocomplete: "tel", optional: true },
+        { name: "shareCode", group: "Vínculo", title: "Tem código, link ou referência do ensaio?", hint: "Se recebeu algo do fotógrafo, informe aqui. Se não, pode deixar em branco.", type: "text", placeholder: "Ex.: ENSAIO-MARINA-2026", optional: true }
+    ];
+
+    const wizardState = {
+        values: {
+            role: "photographer"
+        },
+        index: 0
+    };
+
+    function getSteps() {
+        return [roleStep].concat(wizardState.values.role === "client" ? clientSteps : photographerSteps);
+    }
+
+    function getCurrentStep() {
+        return getSteps()[wizardState.index];
+    }
+
+    function renderInput(step) {
+        if (step.type === "choice") {
+            inputRoot.innerHTML = '<div class="wizard-options">' + step.options.map((option) => `
+                <button
+                    class="wizard-option ${wizardState.values[step.name] === option.value ? "is-selected" : ""}"
+                    type="button"
+                    data-choice-name="${step.name}"
+                    data-choice-value="${option.value}"
+                >
+                    <strong>${option.title}</strong>
+                    <span>${option.description}</span>
+                </button>
+            `).join("") + '</div>';
+
+            inputRoot.querySelectorAll("[data-choice-name]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    wizardState.values[step.name] = button.dataset.choiceValue;
+                    wizardState.index = 0;
+                    renderStep();
+                });
+            });
+            return;
+        }
+
+        if (step.type === "select") {
+            inputRoot.innerHTML = `
+                <div class="wizard-input">
+                    <label class="field">
+                        <span>${step.title}</span>
+                        <select name="${step.name}" ${step.optional ? "" : "required"}>
+                            <option value="">Selecione</option>
+                            ${step.options.map((option) => `<option value="${option}" ${wizardState.values[step.name] === option ? "selected" : ""}>${option}</option>`).join("")}
+                        </select>
+                    </label>
+                </div>
+            `;
+            return;
+        }
+
+        inputRoot.innerHTML = `
+            <div class="wizard-input">
+                <label class="field">
+                    <span>${step.title}</span>
+                    <input
+                        type="${step.type}"
+                        name="${step.name}"
+                        value="${wizardState.values[step.name] || ""}"
+                        placeholder="${step.placeholder || ""}"
+                        ${step.autocomplete ? `autocomplete="${step.autocomplete}"` : ""}
+                        ${step.min ? `min="${step.min}"` : ""}
+                        ${step.step ? `step="${step.step}"` : ""}
+                        ${step.optional ? "" : "required"}
+                    >
+                </label>
+            </div>
+        `;
+    }
+
+    function updateProgress(steps) {
+        const total = steps.length;
+        const current = wizardState.index + 1;
+        progressBar.style.width = `${(current / total) * 100}%`;
+        stepLabel.textContent = `Etapa ${current}`;
+        stepCounter.textContent = `${current} / ${total}`;
+    }
+
+    function renderStep() {
+        const steps = getSteps();
+        if (wizardState.index >= steps.length) {
+            wizardState.index = steps.length - 1;
+        }
+        const step = getCurrentStep();
+        questionGroup.textContent = step.group;
+        questionTitle.textContent = step.title;
+        questionHint.textContent = step.hint;
+        renderInput(step);
+        updateProgress(steps);
+        feedback.textContent = "";
+        prevButton.hidden = wizardState.index === 0;
+        const isLastStep = wizardState.index === steps.length - 1;
+        nextButton.hidden = isLastStep;
+        submitButton.hidden = !isLastStep;
+    }
+
+    function validateCurrentStep() {
+        const step = getCurrentStep();
+        if (step.type === "choice") {
+            if (!wizardState.values[step.name]) {
+                feedback.textContent = "Selecione um perfil para continuar.";
+                feedback.style.color = "var(--danger)";
+                return false;
+            }
+            return true;
+        }
+
+        const field = inputRoot.querySelector(`[name="${step.name}"]`);
+        const value = field ? field.value.trim() : "";
+        wizardState.values[step.name] = value;
+
+        if (!step.optional && !value) {
+            feedback.textContent = "Preencha essa etapa para continuar.";
+            feedback.style.color = "var(--danger)";
+            return false;
+        }
+
+        if (step.type === "email" && value && !value.includes("@")) {
+            feedback.textContent = "Informe um e-mail válido.";
+            feedback.style.color = "var(--danger)";
+            return false;
+        }
+
+        if (step.type === "password" && value.length < 6) {
+            feedback.textContent = "A senha precisa ter pelo menos 6 caracteres.";
+            feedback.style.color = "var(--danger)";
+            return false;
+        }
+
+        return true;
+    }
+
+    nextButton.addEventListener("click", () => {
+        if (!validateCurrentStep()) {
+            return;
+        }
+        wizardState.index += 1;
+        renderStep();
+    });
+
+    prevButton.addEventListener("click", () => {
+        wizardState.index = Math.max(0, wizardState.index - 1);
+        renderStep();
+    });
+
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (!validateCurrentStep()) {
+            return;
+        }
+
+        const result = registerUserAccount(wizardState.values);
+        feedback.textContent = result.message;
+        feedback.style.color = result.color;
+        if (!result.ok) {
+            return;
+        }
+
+        window.setTimeout(() => {
+            window.location.href = "./index.html";
+        }, 1100);
+    });
+
+    renderStep();
+}
 function renderDashboard() {
     const summaryCards = document.getElementById("summaryCards");
     const upcomingSessions = document.getElementById("upcomingSessions");
@@ -585,18 +777,18 @@ function renderDashboard() {
         : 0;
 
     const metrics = [
-        { label: "Próximos ensaios", value: state.sessions.length, helper: "Agenda registrada no sistema" },
+        { label: "PrÃ³ximos ensaios", value: state.sessions.length, helper: "Agenda registrada no sistema" },
         { label: "Pagamentos pendentes", value: pendingPaymentItems.length, helper: "Recebimentos vinculados aos ensaios" },
         { label: "Clientes ativos", value: state.clients.filter((client) => client.status === "Ativo").length, helper: "Base com contrato ativo" },
-        { label: "Média estimada mensal", value: formatCurrency(estimatedRevenue), helper: "Baseada no cadastro do fotógrafo" }
+        { label: "MÃ©dia estimada mensal", value: formatCurrency(estimatedRevenue), helper: "Baseada no cadastro do fotÃ³grafo" }
     ];
 
     if (heroMetricLabel && heroMetricValue && heroMetricHelper) {
-        heroMetricLabel.textContent = "Média mensal estimada";
+        heroMetricLabel.textContent = "MÃ©dia mensal estimada";
         heroMetricValue.textContent = formatCurrency(estimatedRevenue);
         heroMetricHelper.textContent = state.profile.monthlyAverageSessions > 0
-            ? `${state.profile.monthlyAverageSessions} ensaios/mês x ${formatCurrency(state.profile.sessionPrice)} por ensaio.`
-            : "Complete o cadastro do fotógrafo para gerar a média mensal.";
+            ? `${state.profile.monthlyAverageSessions} ensaios/mÃªs x ${formatCurrency(state.profile.sessionPrice)} por ensaio.`
+            : "Complete o cadastro do fotÃ³grafo para gerar a mÃ©dia mensal.";
     }
 
     summaryCards.innerHTML = metrics.map((item) => `
@@ -610,16 +802,16 @@ function renderDashboard() {
     upcomingSessions.innerHTML = state.sessions.length ? state.sessions.slice(0, 3).map((session) => `
         <div class="stack-item">
             <strong>${session.title}</strong>
-            <div class="stack-item__meta">${session.client} · ${session.date} · ${session.time}</div>
-            <div class="stack-item__meta">${session.location} · ${session.status}</div>
+            <div class="stack-item__meta">${session.client} Â· ${session.date} Â· ${session.time}</div>
+            <div class="stack-item__meta">${session.location} Â· ${session.status}</div>
         </div>
     `).join("") : `<div class="stack-item"><strong>Nenhum ensaio cadastrado</strong><div class="stack-item__meta">Adicione ensaios reais para visualizar sua agenda.</div></div>`;
 
     pendingPayments.innerHTML = pendingPaymentItems.length ? pendingPaymentItems.map((payment) => `
         <div class="stack-item">
             <strong>${payment.amount}</strong>
-            <div class="stack-item__meta">${payment.client} · ${payment.label}</div>
-            <div class="stack-item__meta">${payment.paymentStatus} · ${payment.due}</div>
+            <div class="stack-item__meta">${payment.client} Â· ${payment.label}</div>
+            <div class="stack-item__meta">${payment.paymentStatus} Â· ${payment.due}</div>
         </div>
     `).join("") : `<div class="stack-item"><strong>Nenhum pagamento pendente</strong><div class="stack-item__meta">Cadastre valores reais conforme seus contratos.</div></div>`;
 
@@ -630,7 +822,7 @@ function renderDashboard() {
                 <span class="badge">${client.status}</span>
             </div>
             <div class="client-meta">${client.email}</div>
-            <div class="client-meta">${client.type} · Último ensaio ${client.lastSession}</div>
+            <div class="client-meta">${client.type} Â· Ãšltimo ensaio ${client.lastSession}</div>
         </div>
     `).join("") : `<div class="client-item"><strong>Nenhum cliente recente</strong><div class="client-meta">Cadastre clientes para alimentar o painel.</div></div>`;
 
@@ -638,11 +830,11 @@ function renderDashboard() {
         agendaHighlights.innerHTML = state.sessions.length ? state.sessions.slice(0, 4).map((session) => `
             <div class="stack-item">
                 <strong>${session.title}</strong>
-                <div class="stack-item__meta">${session.date} · ${session.time}</div>
-                <div class="stack-item__meta">${session.client} · ${session.location}</div>
+                <div class="stack-item__meta">${session.date} Â· ${session.time}</div>
+                <div class="stack-item__meta">${session.client} Â· ${session.location}</div>
                 <div class="stack-item__meta">${session.contract ? `Contrato ${session.contract}` : "Sem contrato vinculado"}</div>
             </div>
-        `).join("") : `<div class="stack-item"><strong>Sua agenda está limpa</strong><div class="stack-item__meta">Use a página de ensaios para cadastrar compromissos reais.</div></div>`;
+        `).join("") : `<div class="stack-item"><strong>Sua agenda estÃ¡ limpa</strong><div class="stack-item__meta">Use a pÃ¡gina de ensaios para cadastrar compromissos reais.</div></div>`;
     }
 
     if (financeChart && financialPeriodBadge) {
@@ -682,7 +874,7 @@ function renderAgendaControls() {
                 <div class="weekday-card__top">
                     <div>
                         <strong>${name}</strong>
-                        <div class="client-meta">${config.enabled ? "Disponível para agendamento" : "Fora da agenda"}</div>
+                        <div class="client-meta">${config.enabled ? "DisponÃ­vel para agendamento" : "Fora da agenda"}</div>
                     </div>
                     <label class="switch" aria-label="Ativar ${name}">
                         <input type="checkbox" data-weekday-toggle="${weekday}" ${config.enabled ? "checked" : ""}>
@@ -690,7 +882,7 @@ function renderAgendaControls() {
                     </label>
                 </div>
                 <div class="slot-group">
-                    <span class="client-meta">Horários liberados</span>
+                    <span class="client-meta">HorÃ¡rios liberados</span>
                     <div class="slot-chips">
                         ${defaultSlots.map((slot) => `
                             <button
@@ -787,7 +979,7 @@ function renderAgendaCalendar() {
                 <div class="calendar-day__meta">
                     ${sessions.length ? `<span class="calendar-chip calendar-chip--session">${sessions.length} ensaio${sessions.length > 1 ? "s" : ""}</span>` : ""}
                     ${availability.enabled
-                        ? `<span class="calendar-chip calendar-chip--available">${availability.availableSlots.length} horário${availability.availableSlots.length !== 1 ? "s" : ""}</span>`
+                        ? `<span class="calendar-chip calendar-chip--available">${availability.availableSlots.length} horÃ¡rio${availability.availableSlots.length !== 1 ? "s" : ""}</span>`
                         : `<span class="calendar-chip">${weekdayNames[currentDate.getDay()].slice(0, 3)} bloqueado</span>`
                     }
                 </div>
@@ -819,24 +1011,24 @@ function renderSelectedDateAvailability() {
     label.textContent = formatDateLabel(dateString);
 
     if (!availability.enabled) {
-        status.textContent = "Este dia está fechado na agenda do fotógrafo.";
+        status.textContent = "Este dia estÃ¡ fechado na agenda do fotÃ³grafo.";
         slotsRoot.innerHTML = `<span class="slot-chip is-disabled">Sem disponibilidade</span>`;
         return;
     }
 
     if (availability.availableSlots.length === 0) {
         status.textContent = sessions.length
-            ? "Todos os horários de trabalho deste dia já estão ocupados."
-            : "Nenhum horário foi liberado pelo fotógrafo para esta data.";
+            ? "Todos os horÃ¡rios de trabalho deste dia jÃ¡ estÃ£o ocupados."
+            : "Nenhum horÃ¡rio foi liberado pelo fotÃ³grafo para esta data.";
     } else {
         status.textContent = sessions.length
-            ? "Horários disponíveis já descontam os ensaios agendados."
-            : "Dia disponível para novos agendamentos.";
+            ? "HorÃ¡rios disponÃ­veis jÃ¡ descontam os ensaios agendados."
+            : "Dia disponÃ­vel para novos agendamentos.";
     }
 
     const availableMarkup = availability.availableSlots.map((slot) => `<span class="slot-chip is-active">${slot}</span>`);
     const bookedMarkup = availability.bookedSlots.map((slot) => `<span class="slot-chip is-booked">${slot}</span>`);
-    slotsRoot.innerHTML = [...availableMarkup, ...bookedMarkup].join("") || `<span class="slot-chip is-disabled">Sem horários livres</span>`;
+    slotsRoot.innerHTML = [...availableMarkup, ...bookedMarkup].join("") || `<span class="slot-chip is-disabled">Sem horÃ¡rios livres</span>`;
 }
 
 function setupAgendaNavigation() {
@@ -876,11 +1068,11 @@ function renderAgenda() {
     renderSelectedDateAvailability();
 
     if (calendarRoot.innerHTML.trim() === "") {
-        calendarRoot.innerHTML = `<div class="stack-item"><strong>Calendário indisponível</strong><div class="stack-item__meta">Recarregue a página para aplicar a configuração padrão.</div></div>`;
+        calendarRoot.innerHTML = `<div class="stack-item"><strong>CalendÃ¡rio indisponÃ­vel</strong><div class="stack-item__meta">Recarregue a pÃ¡gina para aplicar a configuraÃ§Ã£o padrÃ£o.</div></div>`;
     }
 
     if (settingsRoot && settingsRoot.innerHTML.trim() === "") {
-        settingsRoot.innerHTML = `<div class="stack-item"><strong>Configurações indisponíveis</strong><div class="stack-item__meta">A agenda foi reinicializada com a configuração padrão.</div></div>`;
+        settingsRoot.innerHTML = `<div class="stack-item"><strong>ConfiguraÃ§Ãµes indisponÃ­veis</strong><div class="stack-item__meta">A agenda foi reinicializada com a configuraÃ§Ã£o padrÃ£o.</div></div>`;
     }
 }
 
@@ -897,19 +1089,19 @@ function renderClientContracts() {
     const contract = getCurrentClientContract();
     if (!client || !contract) {
         title.textContent = "Meus Contratos";
-        subtitle.textContent = "Faça login pelo link compartilhado para acessar o contrato do seu ensaio.";
+        subtitle.textContent = "FaÃ§a login pelo link compartilhado para acessar o contrato do seu ensaio.";
         badge.textContent = "Sem acesso";
-        card.innerHTML = `<div class="stack-item"><strong>Nenhum contrato disponível</strong><div class="stack-item__meta">Entre com uma conta de cliente para visualizar e assinar.</div></div>`;
+        card.innerHTML = `<div class="stack-item"><strong>Nenhum contrato disponÃ­vel</strong><div class="stack-item__meta">Entre com uma conta de cliente para visualizar e assinar.</div></div>`;
         return;
     }
 
     title.textContent = `Meus Contratos | ${contract.photographerName}`;
-    subtitle.textContent = `Você recebeu este contrato a partir do compartilhamento do ensaio com ${contract.photographerName}.`;
+    subtitle.textContent = `VocÃª recebeu este contrato a partir do compartilhamento do ensaio com ${contract.photographerName}.`;
     badge.textContent = contract.status;
     card.innerHTML = `
         <div class="stack-item">
             <strong>${contract.title}</strong>
-            <div class="stack-item__meta">Fotógrafo: ${contract.photographerName}</div>
+            <div class="stack-item__meta">FotÃ³grafo: ${contract.photographerName}</div>
             <div class="stack-item__meta">Cliente: ${contract.clientName}</div>
             <div class="stack-item__meta">Origem do acesso: ${contract.shareCode}</div>
             <div class="stack-item__meta">Status atual: ${contract.status}</div>
@@ -942,18 +1134,18 @@ function renderClientSessions() {
     const client = getCurrentClient();
     const contract = getCurrentClientContract();
     if (!client || !contract) {
-        gate.innerHTML = `<div class="stack-item"><strong>Acesso indisponível</strong><div class="stack-item__meta">Faça login com uma conta de cliente para visualizar seus ensaios.</div></div>`;
+        gate.innerHTML = `<div class="stack-item"><strong>Acesso indisponÃ­vel</strong><div class="stack-item__meta">FaÃ§a login com uma conta de cliente para visualizar seus ensaios.</div></div>`;
         return;
     }
 
     title.textContent = `Meus Ensaios | ${contract.photographerName}`;
-    subtitle.textContent = `Área vinculada ao fotógrafo ${contract.photographerName}.`;
+    subtitle.textContent = `Ãrea vinculada ao fotÃ³grafo ${contract.photographerName}.`;
 
     if (contract.status !== "Assinado") {
         gate.innerHTML = `
             <div class="stack-item">
                 <strong>Assinatura pendente</strong>
-                <div class="stack-item__meta">Você precisa assinar o contrato em Meus Contratos antes de acessar os ensaios.</div>
+                <div class="stack-item__meta">VocÃª precisa assinar o contrato em Meus Contratos antes de acessar os ensaios.</div>
                 <a class="btn btn-primary" href="./meus-contratos.html">Ir para Meus Contratos</a>
             </div>
         `;
@@ -972,13 +1164,13 @@ function renderClientSessions() {
                         <strong>${session.title}</strong>
                         <span class="badge">${session.status}</span>
                     </div>
-                    <div class="client-meta">${session.date} · ${session.time} · ${session.location}</div>
-                    <div class="client-meta">Fotógrafo: ${contract.photographerName}</div>
-                    <div class="client-meta">Contrato: ${session.contract || "Não vinculado"} · Imagens enviadas: ${session.imageCount || 0}</div>
+                    <div class="client-meta">${session.date} Â· ${session.time} Â· ${session.location}</div>
+                    <div class="client-meta">FotÃ³grafo: ${contract.photographerName}</div>
+                    <div class="client-meta">Contrato: ${session.contract || "NÃ£o vinculado"} Â· Imagens enviadas: ${session.imageCount || 0}</div>
                 </div>
             `).join("")}
         </div>
-    ` : `<div class="stack-item"><strong>Nenhum ensaio disponível ainda</strong><div class="stack-item__meta">Assim que o fotógrafo cadastrar ou compartilhar seus ensaios, eles aparecerão aqui.</div></div>`;
+    ` : `<div class="stack-item"><strong>Nenhum ensaio disponÃ­vel ainda</strong><div class="stack-item__meta">Assim que o fotÃ³grafo cadastrar ou compartilhar seus ensaios, eles aparecerÃ£o aqui.</div></div>`;
 }
 
 function populateSettingsForm(formId, fields) {
@@ -1008,8 +1200,8 @@ function updateSettingsSummary() {
     }
     value.textContent = getPhotographerDisplayName();
     helper.textContent = state.settings.sessionPrice > 0
-        ? `${formatCurrency(Number(state.settings.sessionPrice))} por ensaio · média de ${state.settings.monthlyAverageSessions || 0} ensaios/mês.`
-        : "Preencha as seções abaixo para personalizar a plataforma.";
+        ? `${formatCurrency(Number(state.settings.sessionPrice))} por ensaio Â· mÃ©dia de ${state.settings.monthlyAverageSessions || 0} ensaios/mÃªs.`
+        : "Preencha as seÃ§Ãµes abaixo para personalizar a plataforma.";
 }
 
 function setupSettings() {
@@ -1142,7 +1334,7 @@ function renderClients() {
                 </div>
             </td>
         </tr>
-    `).join("") : `<tr><td colspan="6">Nenhum cliente cadastrado. Use o botão "Adicionar cliente" para começar.</td></tr>`;
+    `).join("") : `<tr><td colspan="6">Nenhum cliente cadastrado. Use o botÃ£o "Adicionar cliente" para comeÃ§ar.</td></tr>`;
 
     tableBody.querySelectorAll("[data-edit-client]").forEach((button) => {
         button.addEventListener("click", () => openClientModal(Number(button.dataset.editClient)));
@@ -1237,13 +1429,13 @@ function renderSessions() {
                     <strong>${session.title}</strong>
                     <span class="badge">${session.status}</span>
                 </div>
-                <div class="client-meta">${session.client} · ${session.date} · ${session.time}</div>
+                <div class="client-meta">${session.client} Â· ${session.date} Â· ${session.time}</div>
                 <div class="client-meta">${session.location}</div>
-                <div class="client-meta">Contrato: ${session.contract || "Não vinculado"} · Valor: ${formatCurrency(getSessionPrice(session))}</div>
-                <div class="client-meta">Pagamento: ${session.paymentStatus || "Pendente"} · Imagens: ${session.imageCount || 0}</div>
+                <div class="client-meta">Contrato: ${session.contract || "NÃ£o vinculado"} Â· Valor: ${formatCurrency(getSessionPrice(session))}</div>
+                <div class="client-meta">Pagamento: ${session.paymentStatus || "Pendente"} Â· Imagens: ${session.imageCount || 0}</div>
             </article>
         `).join("")
-        : `<article class="session-item"><strong>Nenhum ensaio cadastrado</strong><div class="client-meta">Crie seus próximos compromissos para alimentar a agenda.</div></article>`;
+        : `<article class="session-item"><strong>Nenhum ensaio cadastrado</strong><div class="client-meta">Crie seus prÃ³ximos compromissos para alimentar a agenda.</div></article>`;
 }
 
 function setupSessions() {
@@ -1305,14 +1497,14 @@ async function renderPortfolio() {
     }
 
     if (portfolioTitle) {
-        portfolioTitle.textContent = state.settings.publicName || "Seu Portfólio";
+        portfolioTitle.textContent = state.settings.publicName || "Seu PortfÃ³lio";
     }
     if (portfolioBio) {
-        portfolioBio.textContent = state.settings.publicBio || "Atualize sua bio em Configurações para apresentar melhor seu trabalho.";
+        portfolioBio.textContent = state.settings.publicBio || "Atualize sua bio em ConfiguraÃ§Ãµes para apresentar melhor seu trabalho.";
     }
     if (portfolioInstagram) {
         const handle = state.settings.publicInstagram || state.settings.instagram || "";
-        portfolioInstagram.textContent = handle || "Adicione seu Instagram em Configurações";
+        portfolioInstagram.textContent = handle || "Adicione seu Instagram em ConfiguraÃ§Ãµes";
         portfolioInstagram.href = handle ? `https://instagram.com/${handle.replace("@", "")}` : "#";
     }
 
@@ -1325,8 +1517,8 @@ async function renderPortfolio() {
         return `
         <article class="portfolio-card" data-preview-image="${src}" data-portfolio-id="${photo.id}" draggable="true">
             <div class="portfolio-card__toolbar">
-                <button class="portfolio-card__handle" type="button" aria-label="Arrastar imagem">⋮⋮</button>
-                <button class="portfolio-card__delete" type="button" data-delete-portfolio="${photo.id}" aria-label="Remover imagem">✕</button>
+                <button class="portfolio-card__handle" type="button" aria-label="Arrastar imagem">â‹®â‹®</button>
+                <button class="portfolio-card__delete" type="button" data-delete-portfolio="${photo.id}" aria-label="Remover imagem">âœ•</button>
             </div>
             <img src="${src}" alt="${photo.name}" loading="lazy">
         </article>
@@ -1527,6 +1719,7 @@ function init() {
     safeRun(setupSidebar);
     safeRun(setupModals);
     safeRun(setupAuth);
+    safeRun(setupRegisterWizard);
     safeRun(setupAgendaNavigation);
     safeRun(renderAgenda);
     safeRun(setupSettings);
@@ -1545,3 +1738,4 @@ function init() {
 }
 
 document.addEventListener("DOMContentLoaded", init);
+
