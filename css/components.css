@@ -523,7 +523,6 @@
 }
 
 .register-aside__content,
-.register-aside__cards,
 .register-card,
 .register-wizard,
 .register-question {
@@ -602,6 +601,7 @@
 
 .wizard-options {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
 }
 
 .wizard-option {
@@ -614,14 +614,16 @@
     border-radius: 18px;
     border: 1px solid var(--border);
     background: rgba(255, 255, 255, 0.92);
+    min-height: 108px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    cursor: pointer;
 }
 
 .wizard-option.is-selected,
 .wizard-option:hover,
 .wizard-option:focus-visible {
-    border-color: rgba(37, 99, 235, 0.45);
-    box-shadow: 0 12px 24px rgba(37, 99, 235, 0.12);
+    border-color: rgba(37, 99, 235, 0.72);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12), 0 12px 24px rgba(37, 99, 235, 0.12);
     transform: translateY(-1px);
 }
 
@@ -633,9 +635,12 @@
     border-radius: 16px;
     background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(124, 58, 237, 0.16));
     color: var(--secondary);
-    font-size: 0.9rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
+    font-size: 1.35rem;
+}
+
+.wizard-option.is-selected .wizard-option__icon {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(124, 58, 237, 0.26));
+    color: var(--primary);
 }
 
 .wizard-option__body {
@@ -696,6 +701,11 @@
     .register-aside,
     .register-main {
         padding: 32px 28px;
+    }
+
+    .register-card {
+        min-height: 620px;
+        align-content: start;
     }
 }
 .modal,

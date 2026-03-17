@@ -214,6 +214,7 @@ function registerUserAccount(payload) {
         email,
         password,
         photographerName: payload.photographerName?.trim() || "",
+        photographerHandle: payload.photographerHandle?.trim() || "",
         shareCode: payload.shareCode?.trim() || "",
         studioName: payload.studioName?.trim() || "",
         publicName: payload.publicName?.trim() || "",
@@ -233,7 +234,7 @@ function registerUserAccount(payload) {
             id: `CTR-${Date.now()}`,
             clientEmail: email,
             clientName: fullName,
-            photographerName: newUser.photographerName || "FotÃ³grafo responsÃ¡vel",
+            photographerName: newUser.photographerHandle || newUser.photographerName || "FotÃ³grafo responsÃ¡vel",
             shareCode: newUser.shareCode || payload.accessStage?.trim() || payload.shootType?.trim() || "SolicitaÃ§Ã£o direta",
             status: "Pendente",
             signedAt: null,
@@ -271,6 +272,35 @@ function getCurrentClientContract() {
         return null;
     }
     return state.contracts.find((contract) => contract.clientEmail === client.email) || null;
+}
+
+function normalizeInstagramHandle(value) {
+    return (value || "").trim().replace(/^@+/, "").toLowerCase();
+}
+
+function getCurrentClientPhotographer() {
+    const client = getCurrentClient();
+    if (!client) {
+        return null;
+    }
+    const handle = normalizeInstagramHandle(client.photographerHandle || client.photographerName);
+    if (!handle) {
+        return null;
+    }
+    return state.users.find((user) =>
+        user.role === "photographer" &&
+        normalizeInstagramHandle(user.instagram || user.publicName || user.fullName) === handle
+    ) || null;
+}
+
+function getCurrentClientSessions() {
+    const client = getCurrentClient();
+    if (!client) {
+        return [];
+    }
+    return state.sessions.filter((session) =>
+        session.client?.toLowerCase() === client.fullName.toLowerCase() || session.clientEmail === client.email
+    );
 }
 
 function getPhotographerDisplayName() {
@@ -505,7 +535,7 @@ function setupAuth() {
                 : "Login validado. Redirecionando para o dashboard.";
             window.setTimeout(() => {
                 window.location.href = user.role === "client"
-                    ? "./pages/meus-contratos.html"
+                    ? "./pages/dashboard-cliente.html"
                     : "./pages/dashboard.html";
             }, 900);
             return;
@@ -551,18 +581,16 @@ function setupRegisterWizard() {
     const roleStep = {
         name: "role",
         group: "Perfil",
-        title: inviteFromPhotographer ? "Você é cliente?" : "Quem vai usar a plataforma?",
-        hint: inviteFromPhotographer
-            ? "Este acesso parece ter sido enviado por um fotógrafo. Confirme seu perfil para continuar."
-            : "Escolha o perfil para montar o restante do cadastro.",
+        title: inviteFromPhotographer ? "Você é cliente?" : "Você é:",
+        hint: "",
         type: "choice",
         options: [
             inviteFromPhotographer
-                ? { value: "client", title: "Sim, sou cliente", description: "Quero continuar com o acesso que o fotógrafo me enviou.", icon: "CL" }
-                : { value: "photographer", title: "Sou fotógrafo", description: "Quero organizar agenda, contratos, pagamentos e entregas.", icon: "PH" },
+                ? { value: "client", title: "Sim, sou cliente", description: "Quero continuar com o acesso que o fotógrafo me enviou.", icon: "bi-person-heart" }
+                : { value: "photographer", title: "Sou fotógrafo", description: "Quero organizar agenda, contratos, pagamentos e entregas.", icon: "bi-camera-fill" },
             inviteFromPhotographer
-                ? { value: "photographer", title: "Não, sou fotógrafo", description: "Quero criar uma conta de gestão e operar meus ensaios.", icon: "PH" }
-                : { value: "client", title: "Sou cliente", description: "Quero acompanhar um ensaio, contrato e acesso à galeria.", icon: "CL" }
+                ? { value: "photographer", title: "Não, sou fotógrafo", description: "Quero criar uma conta de gestão e operar meus ensaios.", icon: "bi-camera2" }
+                : { value: "client", title: "Sou cliente", description: "Quero acompanhar um ensaio, contrato e acesso à galeria.", icon: "bi-person-badge-fill" }
         ]
     };
 
@@ -590,10 +618,10 @@ function setupRegisterWizard() {
             hint: "Selecione o estágio do atendimento em que você recebeu este link.",
             type: "choice",
             options: [
-                { value: "Ensaio pronto", title: "Recebi uma galeria pronta", description: "Já existe um ensaio finalizado ou material para visualizar.", icon: "EN" },
-                { value: "Aguardando confirmação", title: "Falta confirmar agendamento", description: "O fotógrafo iniciou o atendimento, mas a data ainda será confirmada.", icon: "AG" },
-                { value: "Assinatura de contrato", title: "Preciso assinar contrato", description: "Recebi o acesso principalmente para formalizar a contratação.", icon: "CT" },
-                { value: "Atendimento direto", title: "Foi um envio direto", description: "O fotógrafo já sabe que sou cliente e me enviou este acesso para começar.", icon: "LK" }
+                { value: "Ensaio pronto", title: "Recebi uma galeria pronta", description: "Já existe um ensaio finalizado ou material para visualizar.", icon: "bi-images" },
+                { value: "Aguardando confirmação", title: "Falta confirmar agendamento", description: "O fotógrafo iniciou o atendimento, mas a data ainda será confirmada.", icon: "bi-calendar-check" },
+                { value: "Assinatura de contrato", title: "Preciso assinar contrato", description: "Recebi o acesso principalmente para formalizar a contratação.", icon: "bi-file-earmark-text" },
+                { value: "Atendimento direto", title: "Foi um envio direto", description: "O fotógrafo já sabe que sou cliente e me enviou este acesso para começar.", icon: "bi-link-45deg" }
             ]
         },
         { name: "shootType", group: "Ensaio", title: "Que tipo de ensaio você está contratando?", hint: "Ex.: casal, gestante, branding, evento, formatura.", type: "select", options: ["Casal", "Gestante", "Família", "Branding", "Evento", "Formatura", "Aniversário", "Outro"] },
@@ -634,7 +662,7 @@ function setupRegisterWizard() {
                     data-choice-name="${step.name}"
                     data-choice-value="${option.value}"
                 >
-                    <span class="wizard-option__icon">${option.icon || "OK"}</span>
+                    <span class="wizard-option__icon"><i class="bi ${option.icon || "bi-check2-circle"}"></i></span>
                     <span class="wizard-option__body">
                         <strong>${option.title}</strong>
                         <span>${option.description}</span>
@@ -1133,7 +1161,7 @@ function renderClientContracts() {
     }
 
     title.textContent = `Meus Contratos | ${contract.photographerName}`;
-    subtitle.textContent = `VocÃª recebeu este contrato a partir do compartilhamento do ensaio com ${contract.photographerName}.`;
+    subtitle.textContent = `Acompanhe assinatura, status e dados do seu atendimento com ${contract.photographerName}.`;
     badge.textContent = contract.status;
     card.innerHTML = `
         <div class="stack-item">
@@ -1189,9 +1217,7 @@ function renderClientSessions() {
         return;
     }
 
-    const clientSessions = state.sessions.filter((session) =>
-        session.client?.toLowerCase() === client.fullName.toLowerCase() || session.clientEmail === client.email
-    );
+    const clientSessions = getCurrentClientSessions();
 
     gate.innerHTML = clientSessions.length ? `
         <div class="stack-list">
@@ -1208,6 +1234,80 @@ function renderClientSessions() {
             `).join("")}
         </div>
     ` : `<div class="stack-item"><strong>Nenhum ensaio disponÃ­vel ainda</strong><div class="stack-item__meta">Assim que o fotÃ³grafo cadastrar ou compartilhar seus ensaios, eles aparecerÃ£o aqui.</div></div>`;
+}
+
+function renderClientDashboard() {
+    const title = document.getElementById("clientDashboardTitle");
+    const subtitle = document.getElementById("clientDashboardSubtitle");
+    const pendingRoot = document.getElementById("clientPendingList");
+    const summaryRoot = document.getElementById("clientSummaryList");
+    if (!title || !subtitle || !pendingRoot || !summaryRoot) {
+        return;
+    }
+
+    const client = getCurrentClient();
+    const contract = getCurrentClientContract();
+    const photographer = getCurrentClientPhotographer();
+    const sessions = getCurrentClientSessions();
+
+    if (!client) {
+        title.textContent = "Dashboard do Cliente";
+        subtitle.textContent = "Faça login com uma conta de cliente para acompanhar suas pendências.";
+        pendingRoot.innerHTML = `<div class="stack-item"><strong>Acesso indisponível</strong><div class="stack-item__meta">Entre com a conta enviada pelo fotógrafo.</div></div>`;
+        summaryRoot.innerHTML = "";
+        return;
+    }
+
+    const photographerLabel = contract?.photographerName || photographer?.publicName || photographer?.fullName || "seu fotógrafo";
+    title.textContent = `Olá, ${client.fullName}`;
+    subtitle.textContent = `Tudo que ainda depende de você com ${photographerLabel} aparece aqui.`;
+
+    const pendingItems = [];
+    if (!contract) {
+        pendingItems.push({
+            title: "Vínculo do atendimento pendente",
+            meta: "Seu acesso ainda não foi conectado a um contrato. Peça um link personalizado ao fotógrafo."
+        });
+    } else {
+        if (contract.status !== "Assinado") {
+            pendingItems.push({
+                title: "Assinar contrato",
+                meta: "Finalize a assinatura para liberar todas as próximas etapas."
+            });
+        }
+        if ((client.accessStage || "").toLowerCase().includes("confirma")) {
+            pendingItems.push({
+                title: "Confirmação de agendamento",
+                meta: "O atendimento ainda está aguardando confirmação de data e horário."
+            });
+        }
+    }
+
+    if (sessions.length === 0) {
+        pendingItems.push({
+            title: "Aguardando ensaio aparecer na sua área",
+            meta: "Assim que o fotógrafo vincular ou cadastrar o ensaio, ele será exibido aqui."
+        });
+    }
+
+    pendingRoot.innerHTML = pendingItems.length
+        ? pendingItems.map((item) => `<div class="stack-item"><strong>${item.title}</strong><div class="stack-item__meta">${item.meta}</div></div>`).join("")
+        : `<div class="stack-item"><strong>Nenhuma pendência no momento</strong><div class="stack-item__meta">Seu atendimento está em dia.</div></div>`;
+
+    summaryRoot.innerHTML = `
+        <div class="stack-item">
+            <strong>Fotógrafo responsável</strong>
+            <div class="stack-item__meta">${photographerLabel}${client.photographerHandle ? ` · @${normalizeInstagramHandle(client.photographerHandle)}` : ""}</div>
+        </div>
+        <div class="stack-item">
+            <strong>Status do contrato</strong>
+            <div class="stack-item__meta">${contract?.status || "Ainda não vinculado"}</div>
+        </div>
+        <div class="stack-item">
+            <strong>Ensaios vinculados</strong>
+            <div class="stack-item__meta">${sessions.length} registro${sessions.length !== 1 ? "s" : ""}</div>
+        </div>
+    `;
 }
 
 function populateSettingsForm(formId, fields) {
@@ -1768,6 +1868,7 @@ function init() {
     safeRun(setupSessions);
     safeRun(() => { void renderPortfolio(); });
     safeRun(renderClientContracts);
+    safeRun(renderClientDashboard);
     safeRun(renderClientSessions);
     safeRun(renderGallery);
     safeRun(updatePurchaseSummary);
