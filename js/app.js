@@ -376,6 +376,24 @@ function setupAuth() {
         password: "123456"
     };
 
+    if (!forms.login || !forms.register || tabs.length === 0) {
+        return;
+    }
+
+    function setActiveAuthMode(mode) {
+        tabs.forEach((tab) => {
+            const isActive = tab.dataset.authTab === mode;
+            tab.classList.toggle("is-active", isActive);
+            tab.setAttribute("aria-selected", String(isActive));
+        });
+
+        Object.entries(forms).forEach(([key, form]) => {
+            const isActive = key === mode;
+            form.classList.toggle("is-active", isActive);
+            form.hidden = !isActive;
+        });
+    }
+
     function updateRegisterRoleView() {
         if (!roleSelect || !photographerFields || !clientFields || !forms.register) {
             return;
@@ -399,13 +417,15 @@ function setupAuth() {
 
     roleSelect?.addEventListener("change", updateRegisterRoleView);
     updateRegisterRoleView();
+    setActiveAuthMode("login");
 
     tabs.forEach((tab) => {
         tab.addEventListener("click", () => {
-            tabs.forEach((item) => item.classList.toggle("is-active", item === tab));
-            Object.entries(forms).forEach(([key, form]) => {
-                form.classList.toggle("is-active", key === tab.dataset.authTab);
-            });
+            const mode = tab.dataset.authTab;
+            if (mode !== "login" && mode !== "register") {
+                return;
+            }
+            setActiveAuthMode(mode);
         });
     });
 
@@ -520,9 +540,7 @@ function setupAuth() {
                 }
 
                 feedback.style.color = "var(--success)";
-                tabs.forEach((item) => item.classList.toggle("is-active", item.dataset.authTab === "login"));
-                forms.login?.classList.add("is-active");
-                forms.register?.classList.remove("is-active");
+                setActiveAuthMode("login");
             }
 
             window.setTimeout(() => {
@@ -1212,18 +1230,19 @@ function renderSessions() {
         return true;
     });
 
-    sessionList.innerHTML = filtered.length ? filtered.map((session) => `
-        <article class="session-item">
-            <div class="session-line">
-                <strong>${session.title}</strong>
-                <span class="badge">${session.status}</span>
-            </div>
-            <div class="client-meta">${session.client} · ${session.date} · ${session.time}</div>
-            <div class="client-meta">${session.location}</div>
-            <div class="client-meta">Contrato: ${session.contract || "Não vinculado"} · Valor: ${formatCurrency(getSessionPrice(session))}</div>
-            <div class="client-meta">Pagamento: ${session.paymentStatus || "Pendente"} · Imagens: ${session.imageCount || 0}</div>
-        </article>
-    `).join("") || `<article class="session-item"><strong>Nenhum ensaio encontrado</strong><div class="client-meta">Ajuste o intervalo de datas.</div></article>`;
+    sessionList.innerHTML = filtered.length
+        ? filtered.map((session) => `
+            <article class="session-item">
+                <div class="session-line">
+                    <strong>${session.title}</strong>
+                    <span class="badge">${session.status}</span>
+                </div>
+                <div class="client-meta">${session.client} · ${session.date} · ${session.time}</div>
+                <div class="client-meta">${session.location}</div>
+                <div class="client-meta">Contrato: ${session.contract || "Não vinculado"} · Valor: ${formatCurrency(getSessionPrice(session))}</div>
+                <div class="client-meta">Pagamento: ${session.paymentStatus || "Pendente"} · Imagens: ${session.imageCount || 0}</div>
+            </article>
+        `).join("")
         : `<article class="session-item"><strong>Nenhum ensaio cadastrado</strong><div class="client-meta">Crie seus próximos compromissos para alimentar a agenda.</div></article>`;
 }
 
