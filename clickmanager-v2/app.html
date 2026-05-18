@@ -236,6 +236,10 @@ body {
   gap: 10px;
 }
 
+#userAvatarBtn:hover {
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
 .btn-icon {
   width: 36px; height: 36px;
   border-radius: 50%;
@@ -678,32 +682,392 @@ body {
 .alert-danger  { background: var(--danger-bg);  color: var(--danger);  border-color: var(--danger); }
 .alert-warning { background: var(--warning-bg); color: var(--warning); border-color: var(--warning); }
 
-/* ---------- MOBILE SIDEBAR TOGGLE ---------- */
-.sidebar-toggle {
+/* ---------- MOBILE NAV ---------- */
+.mobile-bottom-nav,
+.mobile-more-overlay {
   display: none;
+}
+
+.mobile-bottom-nav {
   position: fixed;
-  bottom: 20px; right: 20px;
-  z-index: 150;
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 160;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 8px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 18px;
   box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(18px);
+}
+
+.mobile-nav-item {
+  min-width: 0;
+  min-height: 48px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-family: var(--font);
+  font-size: .66rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mobile-nav-item i {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.mobile-nav-item.active,
+.mobile-nav-item[aria-expanded="true"] {
+  background: var(--accent-light);
+  color: var(--accent-text);
+}
+
+.mobile-more-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 155;
+  background: rgba(14,12,26,.36);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition);
+}
+
+.mobile-more-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.mobile-more-sheet {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 86px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  padding: 10px;
+  transform: translateY(12px);
+  transition: transform var(--transition);
+}
+
+.mobile-more-overlay.open .mobile-more-sheet {
+  transform: translateY(0);
+}
+
+.mobile-more-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mobile-more-item {
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  border-radius: 12px;
+  min-height: 52px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font);
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mobile-more-item i {
+  color: var(--accent-text);
+  font-size: 1rem;
+}
+
+.mobile-more-item.danger {
+  color: var(--danger);
+}
+
+.mobile-more-item.danger i {
+  color: var(--danger);
 }
 
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
+  .sidebar { display: none; transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); box-shadow: var(--shadow-lg); }
   .main-content { margin-left: 0; }
-  .sidebar-toggle { display: flex; align-items: center; justify-content: center; }
-  .page { padding: 16px; }
-  .topbar { padding: 0 16px; }
-  .hero-card { flex-direction: column; }
+  .mobile-bottom-nav { display: grid; }
+  .mobile-more-overlay { display: block; }
+  .page { padding: 16px 16px 104px; }
+  .topbar {
+    padding: 0 12px;
+    gap: 10px;
+  }
+  .topbar-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .95rem;
+  }
+  .topbar-actions { gap: 6px; }
+  .topbar-actions .badge {
+    max-width: 86px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    justify-content: center;
+    padding-inline: 8px;
+  }
+  .btn-icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+  }
+  #userAvatarBtn {
+    width: 34px !important;
+    height: 34px !important;
+    flex: 0 0 34px !important;
+  }
+  .page-eyebrow { font-size: .64rem; }
+  .page-title {
+    font-size: 1.55rem;
+    margin-bottom: 16px;
+  }
+  .page-header-row {
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .page-header-row .btn { width: 100%; justify-content: center; }
+  .card {
+    padding: 18px;
+    overflow-x: auto;
+  }
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .stat-card { padding: 16px; }
+  .stat-value { font-size: 1.45rem; }
+  .hero-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 22px;
+  }
+  .hero-card-body h2 { font-size: 1.25rem; }
   .hero-card-value { text-align: left; width: 100%; }
   .two-col { grid-template-columns: 1fr; }
+  .cm-table { min-width: 620px; }
+  .calendar-grid,
+  .cal-header { gap: 4px; }
+  .cal-header-day {
+    font-size: .58rem;
+    letter-spacing: 0;
+  }
+  .cal-day {
+    min-height: 38px;
+    font-size: .72rem;
+  }
+  .list-item { padding: 14px; }
+  .list-item-sub { gap: 8px; }
+  .portfolio-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .modal {
+    width: calc(100% - 24px);
+    max-height: calc(100vh - 24px);
+    overflow: auto;
+    padding: 20px;
+  }
+  .toast-container {
+    left: 12px;
+    right: 12px;
+    bottom: 104px;
+  }
+  .toast { min-width: 0; }
+  [style*="display:flex"][style*="gap:8px"] { flex-wrap: wrap; }
+}
+
+@media (max-width: 480px) {
+  .page { padding: 14px 12px 104px; }
+  .topbar-actions .btn-icon[title="NotificaÃ§Ãµes"],
+  .topbar-actions .btn-icon[title="Notificações"] {
+    display: none;
+  }
+  .stat-grid { grid-template-columns: 1fr; }
+  .btn {
+    min-height: 40px;
+    justify-content: center;
+  }
+  .form-control,
+  .form-select {
+    font-size: 16px;
+  }
+  .calendar-grid,
+  .cal-header { gap: 3px; }
+  .cal-day {
+    border-radius: 7px;
+    min-height: 34px;
+    font-size: .68rem;
+  }
+  #page-portfolio > div:first-child {
+    padding: 24px !important;
+    gap: 16px !important;
+  }
+  #portfolioAvatar {
+    width: 88px !important;
+    height: 88px !important;
+    border-radius: 12px !important;
+  }
+  #portfolioNome {
+    font-size: 1.45rem !important;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 768px) {
+  #page-clientes .card,
+  #page-contratos .card,
+  #page-pagamentos .card {
+    overflow: visible;
+  }
+
+  #page-clientes .card > div[style*="display:flex"],
+  #page-contratos .card > div[style*="display:flex"],
+  #page-pagamentos .card > div[style*="display:flex"] {
+    align-items: stretch !important;
+    flex-direction: column;
+    gap: 12px !important;
+  }
+
+  #page-clientes .card .btn,
+  #page-contratos .card .btn,
+  #page-pagamentos .card .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  #page-clientes .cm-table,
+  #page-clientes .cm-table tbody,
+  #page-clientes .cm-table tr,
+  #page-clientes .cm-table td,
+  #page-contratos .cm-table,
+  #page-contratos .cm-table tbody,
+  #page-contratos .cm-table tr,
+  #page-contratos .cm-table td,
+  #page-pagamentos .cm-table,
+  #page-pagamentos .cm-table tbody,
+  #page-pagamentos .cm-table tr,
+  #page-pagamentos .cm-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  #page-clientes .cm-table thead,
+  #page-contratos .cm-table thead,
+  #page-pagamentos .cm-table thead {
+    display: none;
+  }
+
+  #page-clientes .cm-table tr,
+  #page-contratos .cm-table tr,
+  #page-pagamentos .cm-table tr {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
+  #page-clientes .cm-table td,
+  #page-contratos .cm-table td,
+  #page-pagamentos .cm-table td {
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 14px;
+    font-size: .82rem;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  #page-clientes .cm-table td:last-child,
+  #page-contratos .cm-table td:last-child,
+  #page-pagamentos .cm-table td:last-child {
+    border-bottom: none;
+  }
+
+  #page-clientes .cm-table td[colspan],
+  #page-contratos .cm-table td[colspan],
+  #page-pagamentos .cm-table td[colspan] {
+    display: block;
+    text-align: center;
+  }
+
+  #page-clientes .cm-table td[colspan]::before,
+  #page-contratos .cm-table td[colspan]::before,
+  #page-pagamentos .cm-table td[colspan]::before {
+    content: none;
+  }
+
+  #page-clientes .cm-table td::before,
+  #page-contratos .cm-table td::before,
+  #page-pagamentos .cm-table td::before {
+    color: var(--text2);
+    content: "";
+    flex: 0 0 92px;
+    font-size: .66rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  #page-clientes .cm-table td:nth-child(1)::before { content: "Cliente"; }
+  #page-clientes .cm-table td:nth-child(2)::before { content: "Contato"; }
+  #page-clientes .cm-table td:nth-child(3)::before { content: "Tipo"; }
+  #page-clientes .cm-table td:nth-child(4)::before { content: "Status"; }
+  #page-clientes .cm-table td:nth-child(5)::before { content: "Último"; }
+  #page-clientes .cm-table td:nth-child(6)::before { content: "Ações"; }
+
+  #page-contratos .cm-table td:nth-child(1)::before { content: "Contrato"; }
+  #page-contratos .cm-table td:nth-child(2)::before { content: "Cliente"; }
+  #page-contratos .cm-table td:nth-child(3)::before { content: "Valor"; }
+  #page-contratos .cm-table td:nth-child(4)::before { content: "Status"; }
+  #page-contratos .cm-table td:nth-child(5)::before { content: "Ações"; }
+
+  #page-pagamentos .cm-table td:nth-child(1)::before { content: "Ensaio"; }
+  #page-pagamentos .cm-table td:nth-child(2)::before { content: "Cliente"; }
+  #page-pagamentos .cm-table td:nth-child(3)::before { content: "Valor"; }
+  #page-pagamentos .cm-table td:nth-child(4)::before { content: "Data"; }
+  #page-pagamentos .cm-table td:nth-child(5)::before { content: "Status"; }
+
+  #page-clientes .cm-table td:last-child,
+  #page-contratos .cm-table td:last-child,
+  #page-pagamentos .cm-table td:last-child {
+    align-items: center;
+  }
+
+  #page-clientes .cm-table td:last-child .btn,
+  #page-contratos .cm-table td:last-child .btn,
+  #page-pagamentos .cm-table td:last-child .btn {
+    width: auto;
+    min-height: 34px;
+    padding-inline: 12px;
+  }
 }
 
 /* ---------- LANDING PAGE ---------- */
@@ -1034,7 +1398,7 @@ body {
           <i class="bi bi-moon-fill" id="themeIcon"></i>
         </button>
         <button class="btn-icon" title="Notificações"><i class="bi bi-bell"></i></button>
-        <div id="userAvatarBtn" title="Meu perfil" style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;cursor:pointer;overflow:hidden;flex-shrink:0;border:2px solid var(--border)"><span id="userAvatarContent">CM</span></div>
+        <div id="userAvatarBtn" title="Ver portfólio" aria-label="Ver portfólio" role="button" tabindex="0" data-goto="portfolio" style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;cursor:pointer;overflow:hidden;flex-shrink:0;border:2px solid var(--border)"><span id="userAvatarContent">CM</span></div>
       </div>
     </header>
 
@@ -1351,8 +1715,14 @@ body {
     <!-- ═══ PAGE: PORTFÓLIO ═══ -->
     <div class="page" id="page-portfolio" data-title="Portfólio Público">
       <!-- HEADER BANNER -->
-      <div style="background:linear-gradient(135deg,var(--accent) 0%,#4338ca 100%);border-radius:var(--radius);padding:40px;margin-bottom:24px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
-        <div>
+      <div style="background:linear-gradient(135deg,var(--accent) 0%,#4338ca 100%);border-radius:var(--radius);padding:40px;margin-bottom:24px;color:#fff;display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap">
+        <!-- Avatar -->
+        <div id="portfolioAvatarContainer" style="flex-shrink:0">
+          <img id="portfolioAvatar" src="https://via.placeholder.com/120?text=Foto" alt="Foto do fotógrafo" style="width:120px;height:120px;border-radius:16px;border:3px solid rgba(255,255,255,.25);object-fit:cover;background:rgba(255,255,255,.1)">
+        </div>
+        
+        <!-- Info -->
+        <div style="flex:1;min-width:280px">
           <button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);margin-bottom:16px">
             <i class="bi bi-camera-fill"></i> Click Manager
           </button>
@@ -1618,8 +1988,27 @@ body {
 <!-- TOAST CONTAINER -->
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- MOBILE TOGGLE -->
-<button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+<!-- MOBILE NAV -->
+<div class="mobile-more-overlay" id="mobileMoreOverlay" aria-hidden="true">
+  <div class="mobile-more-sheet" role="dialog" aria-label="Mais opções de navegação">
+    <div class="mobile-more-grid">
+      <button class="mobile-more-item" data-goto="galeria"><i class="bi bi-images"></i> Galeria</button>
+      <button class="mobile-more-item" data-goto="contratos"><i class="bi bi-file-earmark-text"></i> Contratos</button>
+      <button class="mobile-more-item" data-goto="pagamentos"><i class="bi bi-credit-card"></i> Pagamentos</button>
+      <button class="mobile-more-item" data-goto="portfolio"><i class="bi bi-person-badge"></i> Portfólio</button>
+      <button class="mobile-more-item" data-goto="configuracoes"><i class="bi bi-gear"></i> Configurações</button>
+      <button class="mobile-more-item danger" id="mobileLogoutBtn"><i class="bi bi-box-arrow-left"></i> Sair</button>
+    </div>
+  </div>
+</div>
+
+<nav class="mobile-bottom-nav" aria-label="Navegação principal">
+  <button class="mobile-nav-item active" data-mobile-page="dashboard" data-goto="dashboard"><i class="bi bi-grid-1x2-fill"></i><span>Início</span></button>
+  <button class="mobile-nav-item" data-mobile-page="agenda" data-goto="agenda"><i class="bi bi-calendar3"></i><span>Agenda</span></button>
+  <button class="mobile-nav-item" data-mobile-page="clientes" data-goto="clientes"><i class="bi bi-people-fill"></i><span>Clientes</span></button>
+  <button class="mobile-nav-item" data-mobile-page="ensaios" data-goto="ensaios"><i class="bi bi-camera2"></i><span>Ensaios</span></button>
+  <button class="mobile-nav-item" id="mobileMoreBtn" type="button" aria-expanded="false" aria-controls="mobileMoreOverlay"><i class="bi bi-three-dots"></i><span>Mais</span></button>
+</nav>
 
 <script>
 /**
@@ -1668,6 +2057,8 @@ var API = "http://localhost:5000/api";
   if (!isApp) return;
 
   var navItems = document.querySelectorAll(".nav-item[data-page]");
+  var mobileNavItems = document.querySelectorAll(".mobile-nav-item[data-mobile-page]");
+  var mobileMoreBtn = document.getElementById("mobileMoreBtn");
   var pages    = document.querySelectorAll(".page");
   var topbarTitle = document.getElementById("topbarTitle");
 
@@ -1684,6 +2075,14 @@ var API = "http://localhost:5000/api";
     if (el) navigateTo(el.getAttribute("data-goto"));
   });
 
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    var el = e.target.closest("[data-goto]");
+    if (!el) return;
+    e.preventDefault();
+    navigateTo(el.getAttribute("data-goto"));
+  });
+
   function navigateTo(pageId) {
     pages.forEach(function (p) { p.classList.remove("active"); });
     navItems.forEach(function (n) { n.classList.remove("active"); });
@@ -1694,6 +2093,13 @@ var API = "http://localhost:5000/api";
     if (targetPage) {
       targetPage.classList.add("active");
       if (targetNav) targetNav.classList.add("active");
+      mobileNavItems.forEach(function (n) {
+        n.classList.toggle("active", n.getAttribute("data-mobile-page") === pageId);
+      });
+      if (mobileMoreBtn) {
+        var isMorePage = ["galeria", "contratos", "pagamentos", "portfolio", "configuracoes"].indexOf(pageId) >= 0;
+        mobileMoreBtn.classList.toggle("active", isMorePage);
+      }
       if (topbarTitle) topbarTitle.textContent = targetPage.getAttribute("data-title") || "Click Manager";
       window.scrollTo(0,0);
       // Dispara evento customizado (outras partes do JS podem ouvir)
@@ -1706,29 +2112,29 @@ var API = "http://localhost:5000/api";
 })();
 
 /* ============================================================
-   3. MOBILE SIDEBAR
+   3. MOBILE BOTTOM NAV
    ============================================================ */
-(function initMobileSidebar() {
-  var toggle  = document.getElementById("sidebarToggle");
-  var sidebar = document.getElementById("sidebar");
-  if (!toggle || !sidebar) return;
+(function initMobileBottomNav() {
+  var moreBtn = document.getElementById("mobileMoreBtn");
+  var overlay = document.getElementById("mobileMoreOverlay");
+  if (!moreBtn || !overlay) return;
 
-  toggle.addEventListener("click", function () {
-    sidebar.classList.toggle("open");
+  function setOpen(open) {
+    overlay.classList.toggle("open", open);
+    overlay.setAttribute("aria-hidden", open ? "false" : "true");
+    moreBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  moreBtn.addEventListener("click", function () {
+    setOpen(!overlay.classList.contains("open"));
   });
 
-  // Fecha ao clicar fora
-  document.addEventListener("click", function (e) {
-    if (!sidebar.contains(e.target) && e.target !== toggle) {
-      sidebar.classList.remove("open");
-    }
+  overlay.addEventListener("click", function (e) {
+    if (e.target === overlay || e.target.closest("[data-goto]")) setOpen(false);
   });
 
-  // Fecha ao navegar
-  document.querySelectorAll(".nav-item[data-page]").forEach(function (item) {
-    item.addEventListener("click", function () {
-      sidebar.classList.remove("open");
-    });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") setOpen(false);
   });
 })();
 
@@ -1792,13 +2198,21 @@ var API = "http://localhost:5000/api";
    4b. LOGOUT
    ============================================================ */
 (function initLogout() {
-  var btn = document.getElementById("btnSair");
-  if (!btn) return;
-  btn.addEventListener("click", function () {
+  var buttons = [
+    document.getElementById("btnSair"),
+    document.getElementById("mobileLogoutBtn")
+  ].filter(Boolean);
+  if (!buttons.length) return;
+
+  function logout() {
     localStorage.removeItem("cm-token");
     localStorage.removeItem("cm-user");
     localStorage.removeItem("cm-user-id");
     window.location.href = "login.html";
+  }
+
+  buttons.forEach(function (btn) {
+    btn.addEventListener("click", logout);
   });
 })();
 
@@ -2685,8 +3099,10 @@ function fmtDate(s) {
     var img = '<img src="' + dataUrl + '" style="width:100%;height:100%;object-fit:cover">';
     var topbar = document.getElementById("userAvatarContent");
     var confInner = document.getElementById("avatarConfInner");
+    var portfolioAvatar = document.getElementById("portfolioAvatar");
     if (topbar) topbar.outerHTML = img.replace('id="userAvatarContent"','');
     if (confInner) confInner.outerHTML = img;
+    if (portfolioAvatar) portfolioAvatar.src = dataUrl;
     var btnRem = document.getElementById("btnRemoverFoto");
     if (btnRem) btnRem.style.display = "";
   }
@@ -2739,6 +3155,26 @@ function fmtDate(s) {
   }
 
   // ── Preencher campos ───────────────────────────────────────
+  function renderPortfolioInstagram(insta) {
+    var pInsta = document.getElementById("portfolioInsta");
+    if (!pInsta || !insta) return;
+
+    var handle = insta.trim();
+    if (!handle) return;
+    if (handle.charAt(0) !== "@") handle = "@" + handle;
+    var username = handle.replace(/^@+/, "");
+
+    pInsta.textContent = "";
+    var link = document.createElement("a");
+    link.href = "https://www.instagram.com/" + encodeURIComponent(username) + "/";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = handle;
+    link.style.color = "inherit";
+    link.style.textDecoration = "none";
+    pInsta.appendChild(link);
+  }
+
   function preencherCampos() {
     if (!user) return;
     var nome  = document.getElementById("confNome");
@@ -2747,6 +3183,12 @@ function fmtDate(s) {
     if (email && !email.value) email.value = user.email || "";
     var pNome = document.getElementById("portfolioNome");
     if (pNome) pNome.textContent = user.nome || "Fotógrafo";
+    // Carrega foto de perfil no portfólio
+    var saved = localStorage.getItem("cm-avatar");
+    if (saved) {
+      var portfolioAvatar = document.getElementById("portfolioAvatar");
+      if (portfolioAvatar) portfolioAvatar.src = saved;
+    }
   }
 
   document.addEventListener("pagechange", function(e) {
@@ -2771,7 +3213,12 @@ function fmtDate(s) {
       }
       var pNome  = document.getElementById("portfolioNome");  if (pNome)  pNome.textContent  = nome || (user&&user.nome) || "Fotógrafo";
       var pBio   = document.getElementById("portfolioBio");   if (pBio && bio)   pBio.textContent   = bio;
-      var pInsta = document.getElementById("portfolioInsta"); if (pInsta && insta) pInsta.innerHTML = '<i class="bi bi-instagram"></i> ' + insta;
+      renderPortfolioInstagram(insta);
+      // Atualiza foto no portfólio se houver
+      if (!localStorage.getItem("cm-avatar")) {
+        var pAvatar = document.getElementById("portfolioAvatar");
+        if (pAvatar) pAvatar.src = "https://via.placeholder.com/120?text=Foto";
+      }
       showToast("Perfil salvo!", "success");
     });
   }
