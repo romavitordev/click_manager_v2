@@ -29,6 +29,7 @@ builder.Services.AddCors(opt =>
             "http://127.0.0.1:5500",
             "http://localhost:5500",
             "http://localhost:3000",
+            "http://192.168.0.10:5500",
             "https://SEU_USUARIO.github.io"
         ).AllowAnyHeader().AllowAnyMethod()));
 

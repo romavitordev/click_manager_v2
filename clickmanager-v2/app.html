@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Click Manager | Dashboard</title>
+  <link rel="icon" href="/icons/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" sizes="32x32" href="/icons/favicon-32x32.svg" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/android-chrome-192x192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/android-chrome-512x512.png" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <style>
 /* ============================================================
@@ -133,6 +139,8 @@ body {
   font-size: 1.1rem;
   flex-shrink: 0;
 }
+.sidebar-brand .brand-icon.logo-image{background:transparent}
+.sidebar-brand .brand-icon.logo-image img{width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block}
 
 .sidebar-brand .brand-text {
   font-weight: 700;
@@ -1333,7 +1341,7 @@ body {
   ══════════════════════════════════════════ -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-icon"><i class="bi bi-camera-fill"></i></div>
+      <div class="brand-icon logo-image"><img src="/icons/logo.svg" alt="Click Manager logo"/></div>
       <div>
         <div class="brand-text">Click Manager</div>
         <div class="brand-sub">Área administrativa</div>
@@ -1638,9 +1646,12 @@ body {
       </div>
       <div class="card" id="galeriaEmptyCard" style="text-align:center;padding:48px">
         <i class="bi bi-images" style="font-size:3rem;color:var(--text2);margin-bottom:16px;display:block"></i>
-        <div class="card-title">Nenhuma imagem ainda</div>
-        <p style="color:var(--text2);font-size:.875rem;margin-bottom:20px">Envie suas fotos para começar a montar a vitrine pública do fotógrafo.</p>
-        <button class="btn btn-primary" id="btnFazerUpload"><i class="bi bi-upload"></i> Fazer upload</button>
+        <div class="card-title" id="galeriaEmptyTitle">Nenhuma imagem ainda</div>
+        <p id="galeriaEmptyText" style="color:var(--text2);font-size:.875rem;margin-bottom:20px">Envie suas fotos para começar a montar a vitrine pública do fotógrafo.</p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-primary" id="btnFazerUpload"><i class="bi bi-upload"></i> Fazer upload</button>
+          <button class="btn btn-ghost" id="btnMarcarEnsaio" data-goto="ensaios" style="display:none"><i class="bi bi-calendar-plus"></i> Marcar ensaio</button>
+        </div>
       </div>
       <div id="galeriaGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;display:none"></div>
     </div>
@@ -3000,30 +3011,69 @@ function fmtDate(s) {
    ============================================================ */
 (function initGaleria() {
   function carregarEnsaiosSelect(selId) {
-    fetch(API + "/ensaios", { headers: authHdr() })
+    return fetch(API + "/ensaios", { headers: authHdr() })
       .then(function(r){ return r.ok ? r.json() : []; })
       .then(function(list) {
         var sel = document.getElementById(selId);
-        if (!sel) return;
-        sel.innerHTML = '<option value="">Selecione o ensaio</option>' +
-          list.map(function(e){ return '<option value="'+e.id+'">'+( e.titulo||"Ensaio #"+e.id )+' — '+(e.cliente||"")+'</option>'; }).join("");
-      });
+        if (sel) {
+          sel.innerHTML = '<option value="">Selecione o ensaio</option>' +
+            list.map(function(e){ return '<option value="'+e.id+'">'+( e.titulo||"Ensaio #"+e.id )+' — '+(e.cliente||"")+'</option>'; }).join("");
+        }
+        return list;
+      })
+      .catch(function(err) { console.error("Erro carregando ensaios:", err); return []; });
+  }
+
+  function atualizarGaleriaEmptyState() {
+    var titleEl = document.getElementById("galeriaEmptyTitle");
+    var textEl = document.getElementById("galeriaEmptyText");
+    var uploadBtn = document.getElementById("btnFazerUpload");
+    var markBtn = document.getElementById("btnMarcarEnsaio");
+    if (!titleEl || !textEl || !uploadBtn || !markBtn) return;
+
+    carregarEnsaiosSelect("galeriaEnsaioId").then(function(list) {
+      if (!list || list.length === 0) {
+        titleEl.textContent = "Não há ensaios marcados";
+        textEl.textContent = "Crie um ensaio antes de enviar fotos para a galeria.";
+        uploadBtn.style.display = "none";
+        markBtn.style.display = "inline-flex";
+      } else {
+        titleEl.textContent = "Nenhuma imagem ainda";
+        textEl.textContent = "Envie suas fotos para começar a montar a vitrine pública do fotógrafo.";
+        uploadBtn.style.display = "inline-flex";
+        markBtn.style.display = "none";
+      }
+    });
   }
 
   function abrirModalUpload() {
-    carregarEnsaiosSelect("galeriaEnsaioId");
-    var preview = document.getElementById("galeriaPreview");
-    if (preview) preview.innerHTML = "";
-    var fi = document.getElementById("galeriaFileInput");
-    if (fi) fi.value = "";
-    var lbl = document.getElementById("galeriaDropLabel");
-    if (lbl) lbl.textContent = "Máx. 10 arquivos · JPG, PNG ou WEBP";
-    openModal("modalGaleriaUpload");
+    carregarEnsaiosSelect("galeriaEnsaioId").then(function(list) {
+      if (!list || list.length === 0) {
+        showToast("Não há ensaios marcados. Você será levado para agendar um ensaio.", "info");
+        var target = document.querySelector(".nav-item[data-page='ensaios']");
+        if (target) target.click();
+        return;
+      }
+
+      var preview = document.getElementById("galeriaPreview");
+      if (preview) preview.innerHTML = "";
+      var fi = document.getElementById("galeriaFileInput");
+      if (fi) fi.value = "";
+      var lbl = document.getElementById("galeriaDropLabel");
+      if (lbl) lbl.textContent = "Máx. 10 arquivos · JPG, PNG ou WEBP";
+      openModal("modalGaleriaUpload");
+    });
   }
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnEnviarImagens") || e.target.closest("#btnFazerUpload")) abrirModalUpload();
   });
+
+  document.addEventListener("pagechange", function(e) {
+    if (e.detail.page === "galeria") atualizarGaleriaEmptyState();
+  });
+
+  atualizarGaleriaEmptyState();
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#galeriaDropArea")) {

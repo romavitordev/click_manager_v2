@@ -4,10 +4,17 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Click Manager – Gestão para Fotógrafos</title>
+<link rel="icon" href="/icons/favicon.ico" />
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="/icons/faviconsvg.svg" />
+<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/android-chrome-192x192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="/icons/android-chrome-512x512.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous"/>
 <style>
 /* ── RESET & TOKENS ─────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -64,6 +71,10 @@ img{max-width:100%;display:block}
 .nav-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.1rem;color:#fff}
 .nav.scrolled .nav-brand{color:var(--text)}
 .nav-brand-icon{width:36px;height:36px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.05rem;flex-shrink:0}
+..nav-brand-icon.logo-image{background:transparent}
+.nav-brand-icon.logo-image img{width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block}
+.footer-brand .brand-icon.logo-image{background:transparent}
+.footer-brand .brand-icon.logo-image img{width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block}
 .nav-links{display:flex;align-items:center;gap:4px;flex:1}
 .nav-links a{padding:7px 14px;font-size:.875rem;font-weight:500;color:rgba(255,255,255,.8);border-radius:99px;transition:all var(--ease)}
 .nav-links a:hover{background:rgba(255,255,255,.15);color:#fff}
@@ -293,8 +304,8 @@ img{max-width:100%;display:block}
 /* ── NICHES ──────────────────────────────────────── */
 .niches{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
-  gap:10px;
+  grid-template-columns:repeat(4,minmax(140px,1fr));
+  gap:12px;
   justify-items:center;
   align-items:center;
   width:100%;
@@ -321,11 +332,15 @@ img{max-width:100%;display:block}
   box-sizing:border-box;
 }
 .niche:hover{background:var(--accent-mid);color:var(--accent);border-color:var(--accent)}
-.niche i{margin-right:6px;flex-shrink:0}
+.niche i, .niche svg{margin-right:6px;flex-shrink:0}
+.niche svg{width:1rem;height:1rem;display:block}
 
 /* responsive tweaks */
+@media(max-width:1100px){
+  .niches{grid-template-columns:repeat(3,minmax(130px,1fr));gap:12px}
+}
 @media(max-width:700px){
-  .niches{grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+  .niches{grid-template-columns:repeat(2,minmax(120px,1fr));gap:10px}
   .niche{max-width:180px;padding:8px 12px;font-size:.82rem}
 }
 @media(max-width:420px){
@@ -467,7 +482,7 @@ img{max-width:100%;display:block}
 <!-- ── NAV ── -->
 <nav class="nav" id="mainNav">
   <div class="nav-brand">
-    <div class="nav-brand-icon"><i class="bi bi-camera-fill"></i></div>
+    <div class="nav-brand-icon logo-image"><img src="/icons/logo.svg" alt="Click Manager logo"/></div>
     Click Manager
   </div>
   <div class="nav-links">
@@ -773,12 +788,18 @@ img{max-width:100%;display:block}
     <div class="niche"><i class="bi bi-heart-fill"></i>Casamento</div>
     <div class="niche"><i class="bi bi-balloon-fill"></i>Aniversário</div>
     <div class="niche"><i class="bi bi-person-fill"></i>Retratos</div>
-    <div class="niche"><i class="bi bi-building"></i>Corporativo</div>
+    <div class="niche"><i class="bi bi-building-fill"></i>Corporativo</div>
     <div class="niche"><i class="bi bi-trophy-fill"></i>Esportes</div>
     <div class="niche"><i class="bi bi-camera-video-fill"></i>Vídeo</div>
     <div class="niche"><i class="bi bi-brush-fill"></i>Estúdio</div>
     <div class="niche"><i class="bi bi-emoji-sunglasses-fill"></i>Gestante</div>
     <div class="niche"><i class="bi bi-shop"></i>Produtoras</div>
+    <div class="niche">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="16" height="16">
+        <path d="M13 .5c0-.276-.226-.506-.498-.465-1.703.257-2.94 2.012-3 8.462a.5.5 0 0 0 .498.5c.56.01 1 .13 1 1.003v5.5a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5zM4.25 0a.25.25 0 0 1 .25.25v5.122a.128.128 0 0 0 .256.006l.233-5.14A.25.25 0 0 1 5.24 0h.522a.25.25 0 0 1 .25.238l.233 5.14a.128.128 0 0 0 .256-.006V.25A.25.25 0 0 1 6.75 0h.29a.5.5 0 0 1 .498.458l.423 5.07a1.69 1.69 0 0 1-1.059 1.711l-.053.022a.92.92 0 0 0-.58.884L6.47 15a.971.971 0 1 1-1.942 0l.202-6.855a.92.92 0 0 0-.58-.884l-.053-.022a1.69 1.69 0 0 1-1.059-1.712L3.462.458A.5.5 0 0 1 3.96 0z"/>
+      </svg>
+      Gastronomia
+    </div>
     <div class="niche"><i class="bi bi-three-dots"></i>E muito mais</div>
   </div>
 </section>
@@ -895,7 +916,7 @@ img{max-width:100%;display:block}
 <footer class="footer">
   <div class="footer-grid">
     <div class="footer-brand">
-      <div class="brand-name"><div class="brand-icon"><i class="bi bi-camera-fill"></i></div>Click Manager</div>
+      <div class="brand-name"><div class="brand-icon logo-image"><img src="/icons/logo.svg" alt="Click Manager logo"/></div>Click Manager</div>
       <p>A plataforma de gestão nº1 para fotógrafos freelancers. Simplifique, organize e fature mais.</p>
     </div>
     <div class="footer-col">
