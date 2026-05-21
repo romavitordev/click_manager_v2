@@ -71,7 +71,7 @@ img{max-width:100%;display:block}
 .nav-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.1rem;color:#fff}
 .nav.scrolled .nav-brand{color:var(--text)}
 .nav-brand-icon{width:36px;height:36px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.05rem;flex-shrink:0}
-..nav-brand-icon.logo-image{background:transparent}
+.nav-brand-icon.logo-image{background:transparent}
 .nav-brand-icon.logo-image img{width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block}
 .footer-brand .brand-icon.logo-image{background:transparent}
 .footer-brand .brand-icon.logo-image img{width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block}
@@ -958,8 +958,22 @@ img{max-width:100%;display:block}
   nav.classList.remove('visible');
 
   function onScroll(){
-    // mark scrolled state for styling
-    nav.classList.toggle('scrolled', window.scrollY>40);
+    // Determine scrolled state based on when the stats strip crosses the nav brand
+    var stats = document.querySelector('.stats-strip');
+    var brand = nav.querySelector('.nav-brand');
+    var scrolled = false;
+
+    if(stats && brand){
+      var statsRect = stats.getBoundingClientRect();
+      var brandRect = brand.getBoundingClientRect();
+      // when the top of the stats strip reaches the bottom of the brand text/icon
+      scrolled = statsRect.top <= brandRect.bottom;
+    } else {
+      // fallback to original simple threshold
+      scrolled = window.scrollY > 40;
+    }
+
+    nav.classList.toggle('scrolled', scrolled);
 
     // show nav while scrolling
     if(!nav.classList.contains('visible')) nav.classList.add('visible');
