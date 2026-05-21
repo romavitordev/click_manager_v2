@@ -75,6 +75,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .form-group{margin-bottom:16px}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .form-label{display:block;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:6px}
+.form-label-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
 .form-control{width:100%;padding:11px 14px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--font);font-size:.875rem;transition:border-color var(--ease),box-shadow var(--ease)}
 .form-control:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-mid)}
 .form-control::placeholder{color:var(--text3)}
@@ -102,6 +103,20 @@ input[type="password"]::-webkit-credentials-auto-fill-button { display: none !im
 .plan-opt.selected{border-color:var(--accent);background:var(--accent-mid)}
 .plan-opt-name{font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:2px}
 .plan-opt-price{font-size:.68rem;color:var(--text2)}
+
+/* Pricing toggle (mensal / anual) for signup page */
+.pricing-toggle{display:flex;align-items:center;gap:10px;margin:0;justify-content:flex-end}
+.pricing-toggle .toggle-label{font-size:.88rem;color:var(--text2);font-weight:600}
+.toggle-track{width:44px;height:24px;background:var(--border);border-radius:99px;cursor:pointer;position:relative;transition:background var(--ease)}
+.toggle-track.on{background:var(--accent)}
+.toggle-thumb{width:18px;height:18px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:left var(--ease);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle-track.on .toggle-thumb{left:23px}
+.discount-pill{background:var(--green-bg);color:var(--green);font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:99px;border:1px solid var(--green)}
+
+@media(max-width:520px){
+  .form-label-row{flex-direction:column;align-items:flex-start}
+  .pricing-toggle{margin-top:8px;justify-content:flex-start}
+}
 
 /* cartão de crédito */
 .card-section{overflow:hidden;max-height:0;opacity:0;transition:max-height .45s cubic-bezier(.4,0,.2,1),opacity .35s ease,margin .35s ease;margin-bottom:0}
@@ -203,17 +218,26 @@ input[type="password"]::-webkit-credentials-auto-fill-button { display: none !im
 
       <!-- PLANO -->
       <div class="form-group">
-        <div class="form-label">Escolha seu plano</div>
+        <div class="form-label-row">
+          <div class="form-label">Escolha seu plano</div>
+          <div class="pricing-toggle">
+            <span class="toggle-label">Mensal</span>
+            <div class="toggle-track" id="billingToggleSignup"><div class="toggle-thumb"></div></div>
+            <span class="toggle-label">Anual</span>
+            <span class="discount-pill">-10% de desconto</span>
+          </div>
+        </div>
+
         <div class="plan-selector">
-          <div class="plan-opt selected" data-plan="starter">
+          <div class="plan-opt selected" data-plan="starter" data-monthly="Grátis" data-annual="Grátis">
             <div class="plan-opt-name">Starter</div>
             <div class="plan-opt-price">Grátis</div>
           </div>
-          <div class="plan-opt" data-plan="pro">
+          <div class="plan-opt" data-plan="pro" data-monthly="R$49/mês" data-annual="R$528/ano">
             <div class="plan-opt-name">Pro</div>
             <div class="plan-opt-price">R$49/mês</div>
           </div>
-          <div class="plan-opt" data-plan="studio">
+          <div class="plan-opt" data-plan="studio" data-monthly="R$99/mês" data-annual="R$1068/ano">
             <div class="plan-opt-name">Studio</div>
             <div class="plan-opt-price">R$99/mês</div>
           </div>
@@ -321,22 +345,53 @@ input[type="password"]::-webkit-credentials-auto-fill-button { display: none !im
 // ── Seletor de plano ──────────────────────────────────────
 var cardSection=document.getElementById("cardSection");
 var btnText=document.getElementById("btnText");
-document.querySelectorAll(".plan-opt").forEach(function(opt){
-  opt.addEventListener("click",function(){
-    document.querySelectorAll(".plan-opt").forEach(function(o){o.classList.remove("selected");});
-    opt.classList.add("selected");
-    var plano=opt.getAttribute("data-plan");
-    document.getElementById("planSelected").value=plano;
-    if(plano==="starter"){
-      cardSection.classList.remove("open");
-      btnText.textContent="Criar minha conta grátis";
-    }else{
-      cardSection.classList.add("open");
-      var preco=plano==="pro"?"R$49/mês":"R$99/mês";
-      btnText.textContent="Assinar plano "+opt.querySelector(".plan-opt-name").textContent+" — "+preco;
+var billingToggle = document.getElementById('billingToggleSignup');
+var annualSignup = false; // default mensal
+
+function updatePricesOnPage(){
+  document.querySelectorAll('.plan-opt').forEach(function(p){
+    var priceEl = p.querySelector('.plan-opt-price');
+    if(!priceEl) return;
+    var monthly = p.getAttribute('data-monthly') || priceEl.textContent;
+    var annual  = p.getAttribute('data-annual') || monthly;
+    priceEl.textContent = annualSignup ? annual : monthly;
+  });
+  // Update CTA if a paid plan is selected
+  var sel = document.querySelector('.plan-opt.selected');
+  if(sel){
+    var plano = sel.getAttribute('data-plan');
+    if(plano==='starter'){
+      cardSection.classList.remove('open');
+      btnText.textContent = 'Criar minha conta grátis';
+    } else {
+      cardSection.classList.add('open');
+      var priceText = sel.querySelector('.plan-opt-price').textContent;
+      btnText.textContent = 'Assinar plano '+sel.querySelector('.plan-opt-name').textContent+' — '+priceText;
     }
+  }
+}
+
+// toggle click
+if(billingToggle){
+  billingToggle.addEventListener('click', function(){
+    annualSignup = !annualSignup;
+    billingToggle.classList.toggle('on', annualSignup);
+    updatePricesOnPage();
+  });
+}
+
+// plan selection
+document.querySelectorAll('.plan-opt').forEach(function(opt){
+  opt.addEventListener('click', function(){
+    document.querySelectorAll('.plan-opt').forEach(function(o){ o.classList.remove('selected'); });
+    opt.classList.add('selected');
+    document.getElementById('planSelected').value = opt.getAttribute('data-plan');
+    updatePricesOnPage();
   });
 });
+
+// initialize display
+updatePricesOnPage();
 
 // ── Formatação do cartão ──────────────────────────────────
 document.getElementById("cardNumber").addEventListener("input",function(){

@@ -23,5 +23,14 @@ public class FotografoDto
     public required string Nome       { get; init; }
     public required string Email      { get; init; }
     public string? Telefone   { get; init; }
+    public string? Instagram  { get; init; }
+    public string? Bio        { get; init; }
     public required string PlanoAtivo { get; init; }
 }
+
+public record UpdateProfileRequest(
+    string Nome,
+    string? Telefone = null,
+    string? Instagram = null,
+    string? Bio = null
+);

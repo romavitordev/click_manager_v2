@@ -2,8 +2,10 @@ using ClickManagerApi.Data;
 using ClickManagerApi.Models;
 using ClickManagerApi.Models.Entities;
 using ClickManagerApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ClickManagerApi.Controllers;
 
@@ -57,17 +59,49 @@ public class AuthController : ControllerBase
         return Created($"/api/fotografos/{fotografo.Id}", BuildResponse(fotografo));
     }
 
+    private int FotografoId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    private FotografoDto BuildDto(Fotografo f) => new()
+    {
+        Id         = f.Id,
+        Nome       = f.Nome,
+        Email      = f.Email,
+        Telefone   = f.Telefone,
+        Instagram  = f.Instagram,
+        Bio        = f.Bio,
+        PlanoAtivo = f.PlanoAtivo
+    };
+
     private AuthResponse BuildResponse(Fotografo f) => new()
     {
         Token     = _auth.GenerateToken(f),
         ExpiresAt = DateTime.UtcNow.AddHours(24),
-        Fotografo = new FotografoDto
-        {
-            Id         = f.Id,
-            Nome       = f.Nome,
-            Email      = f.Email,
-            Telefone   = f.Telefone,
-            PlanoAtivo = f.PlanoAtivo
-        }
+        Fotografo = BuildDto(f)
     };
+
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> Me()
+    {
+        var fotografo = await _db.Fotografos.FindAsync(FotografoId);
+        if (fotografo is null) return NotFound();
+        return Ok(BuildDto(fotografo));
+    }
+
+    [HttpPut("profile")]
+    [Authorize]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest req)
+    {
+        var fotografo = await _db.Fotografos.FindAsync(FotografoId);
+        if (fotografo is null) return NotFound();
+
+        fotografo.Nome      = string.IsNullOrWhiteSpace(req.Nome) ? fotografo.Nome : req.Nome.Trim();
+        fotografo.Telefone  = string.IsNullOrWhiteSpace(req.Telefone) ? null : req.Telefone.Trim();
+        fotografo.Instagram = string.IsNullOrWhiteSpace(req.Instagram) ? null : req.Instagram.Trim();
+        fotografo.Bio       = string.IsNullOrWhiteSpace(req.Bio) ? null : req.Bio.Trim();
+        fotografo.AtualizadoEm = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return Ok(BuildDto(fotografo));
+    }
 }

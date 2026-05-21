@@ -55,7 +55,7 @@ a    { text-decoration: none; }
   --radius-sm:     8px;
   --font:          'Sora', sans-serif;
   --font-mono:     'DM Mono', monospace;
-  --transition:    0.2s ease;
+  --transition:    0.35s ease;
   --navbar-height: 64px;
   --sidebar-width: 220px;
 }
@@ -590,17 +590,116 @@ body {
 }
 .cal-day:hover { background: var(--accent-light); color: var(--accent-text); border-color: var(--accent); }
 .cal-day.today { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
+.cal-day.has-event {
+  background: var(--accent-light);
+  color: var(--text);
+  border-color: var(--accent);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(109,40,217,.08);
+}
 .cal-day.has-event::after {
   content: '';
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--accent);
   position: absolute;
-  bottom: 4px;
+  left: 18%;
+  right: 18%;
+  bottom: 8px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: background var(--transition), transform var(--transition);
 }
 .cal-day.today.has-event::after { background: #fff; }
 .cal-day.blocked { background: var(--bg2); color: var(--text2); opacity: .6; }
 .cal-day.other-month { opacity: .35; }
+.cal-legend-chip {
+  display: inline-block;
+  width: 18px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+#toggleDom {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+#sliderDom {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--border);
+  border: 1px solid transparent;
+  transition: background var(--transition), border-color var(--transition);
+}
+#sliderDom::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.16);
+  transition: transform var(--transition), background var(--transition), box-shadow var(--transition);
+}
+#toggleDom:checked + #sliderDom {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+#toggleDom:checked + #sliderDom::before {
+  transform: translateX(20px);
+  box-shadow: 0 2px 5px rgba(0,0,0,.2);
+}
+.switch-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--border);
+  border: 1px solid transparent;
+  transition: background var(--transition), border-color var(--transition);
+}
+.switch-track::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.16);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  width: 48px;
+  height: 24px;
+}
+.toggle-switch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+.toggle-switch input:checked + .switch-track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.toggle-switch input:checked + .switch-track::before {
+  transform: translateX(24px);
+  box-shadow: 0 2px 5px rgba(0,0,0,.2);
+}
 
 /* ---------- PORTFOLIO GRID ---------- */
 .portfolio-grid {
@@ -1539,7 +1638,7 @@ body {
           </div>
           <div class="calendar-grid" id="calGrid"></div>
           <div style="display:flex;gap:16px;margin-top:12px;font-size:.72rem;color:var(--text2)">
-            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent);margin-right:4px"></span>Com ensaio</span>
+            <span><span class="cal-legend-chip"></span>Com ensaio</span>
             <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent-light);border:2px solid var(--accent);margin-right:4px"></span>Hoje</span>
           </div>
         </div>
@@ -1549,15 +1648,17 @@ body {
           <div class="card-label">Configuração do fotógrafo</div>
           <div class="card-title">Dias e horários de trabalho</div>
           <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface2);border-radius:var(--radius-sm)">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--surface2);border-radius:var(--radius-sm)">
               <div>
                 <strong style="font-size:.875rem">Domingo</strong>
-                <div style="font-size:.72rem;color:var(--text2)">Fora da agenda</div>
+                <div id="toggleDomStatus" style="font-size:.72rem;color:var(--text2)">Fora da agenda</div>
               </div>
-              <label style="cursor:pointer;position:relative;display:inline-block;width:42px;height:22px">
-                <input type="checkbox" style="opacity:0;width:0;height:0" id="toggleDom" />
-                <span id="sliderDom" style="position:absolute;inset:0;background:var(--border);border-radius:99px;transition:.3s"></span>
-              </label>
+              <div style="display:flex;align-items:center;gap:10px">
+                <label class="toggle-switch" aria-label="Ativar domingo na agenda">
+                  <input type="checkbox" id="toggleDom" />
+                  <span id="sliderDom"></span>
+                </label>
+              </div>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface2);border-radius:var(--radius-sm)">
               <div>
@@ -1740,7 +1841,7 @@ body {
           <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:4px">Portfólio Público</div>
           <h2 id="portfolioNome" style="font-size:2rem;font-weight:800;margin-bottom:8px">—</h2>
           <p id="portfolioBio" style="opacity:.8;font-size:.9rem">Atualize sua bio em Configurações para apresentar melhor seu trabalho.</p>
-          <p id="portfolioInsta" style="opacity:.6;font-size:.82rem;margin-top:4px"><i class="bi bi-instagram"></i> Adicione seu Instagram em Configurações</p>
+          <p id="portfolioInsta" style="opacity:.6;font-size:.82rem;margin-top:4px;cursor:pointer" data-goto="configuracoes"><i class="bi bi-instagram"></i> Adicione seu Instagram em Configurações</p>
         </div>
       </div>
 
@@ -1821,11 +1922,11 @@ body {
           <div class="card-label">Aparência</div>
           <div class="card-title" style="margin-bottom:16px">Tema do sistema</div>
           <p style="font-size:.875rem;color:var(--text2);margin-bottom:16px">Escolha o tema de cores do sistema.</p>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <button class="btn btn-ghost" id="setLight" style="justify-content:flex-start;gap:12px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-ghost btn-sm" id="setLight" style="justify-content:flex-start;gap:10px;padding:8px 14px;font-size:.84rem">
               <i class="bi bi-sun-fill" style="color:#f59e0b"></i> Tema claro
             </button>
-            <button class="btn btn-ghost" id="setDark" style="justify-content:flex-start;gap:12px">
+            <button class="btn btn-ghost btn-sm" id="setDark" style="justify-content:flex-start;gap:10px;padding:8px 14px;font-size:.84rem">
               <i class="bi bi-moon-fill" style="color:var(--accent-text)"></i> Tema escuro
             </button>
           </div>
@@ -1866,7 +1967,20 @@ body {
       <div class="form-group"><label class="form-label">Valor</label><input class="form-control" id="ensaioValor" placeholder="700,00" /></div>
     </div>
     <div class="form-group"><label class="form-label">Local</label><input class="form-control" id="ensaioLocal" placeholder="Cidade ou endereço" /></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding:0">
+      <div>
+        <label class="form-label" style="margin-bottom:4px">Pagamento</label>
+        <div style="font-size:.78rem;color:var(--text2)">Marque se o pagamento já foi realizado.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="ensaioPagoStatus" style="font-size:.85rem;color:var(--text2)">Pendente</span>
+        <label class="toggle-switch" aria-label="Status de pagamento">
+          <input type="checkbox" id="ensaioPago" />
+          <span class="switch-track"></span>
+        </label>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px">
       <button class="btn btn-ghost" data-modal-close="modalNovoEnsaio">Cancelar</button>
       <button class="btn btn-primary" id="btnSalvarEnsaio">Salvar ensaio</button>
     </div>
@@ -2581,9 +2695,10 @@ function fmtDate(s) {
           .then(function(c){ return c.id; });
       })
       .then(function(clienteId) {
+        var pago = !!document.getElementById("ensaioPago") && document.getElementById("ensaioPago").checked;
         return fetch(API + "/ensaios", {
           method:"POST", headers: authHdr(),
-          body: JSON.stringify({ clienteId: clienteId, titulo: titulo, dataHora: data + "T10:00:00", local: local, valor: valorNum })
+          body: JSON.stringify({ clienteId: clienteId, titulo: titulo, dataHora: data + "T10:00:00", local: local, valor: valorNum, statusPgto: pago ? "Pago" : "Pendente" })
         });
       })
       .then(function(r){ return r.ok ? r.json() : Promise.reject(r); })
@@ -3207,14 +3322,23 @@ function fmtDate(s) {
   // ── Preencher campos ───────────────────────────────────────
   function renderPortfolioInstagram(insta) {
     var pInsta = document.getElementById("portfolioInsta");
-    if (!pInsta || !insta) return;
+    if (!pInsta) return;
+
+    if (!insta || !insta.trim()) {
+      pInsta.innerHTML = '<i class="bi bi-instagram"></i> Adicione seu Instagram em Configurações';
+      pInsta.setAttribute("data-goto", "configuracoes");
+      pInsta.style.cursor = "pointer";
+      return;
+    }
 
     var handle = insta.trim();
-    if (!handle) return;
     if (handle.charAt(0) !== "@") handle = "@" + handle;
     var username = handle.replace(/^@+/, "");
 
     pInsta.textContent = "";
+    pInsta.removeAttribute("data-goto");
+    pInsta.style.cursor = "default";
+
     var link = document.createElement("a");
     link.href = "https://www.instagram.com/" + encodeURIComponent(username) + "/";
     link.target = "_blank";
@@ -3229,11 +3353,19 @@ function fmtDate(s) {
     if (!user) return;
     var nome  = document.getElementById("confNome");
     var email = document.getElementById("confEmail");
+    var insta = document.getElementById("confInstagram");
+    var bio   = document.getElementById("confBio");
     if (nome  && !nome.value)  nome.value  = user.nome  || "";
     if (email && !email.value) email.value = user.email || "";
+    if (insta && !insta.value) insta.value = user.instagram || "";
+    if (bio && !bio.value)     bio.value   = user.bio       || "";
     var pNome = document.getElementById("portfolioNome");
     if (pNome) pNome.textContent = user.nome || "Fotógrafo";
-    // Carrega foto de perfil no portfólio
+    if (user.instagram) renderPortfolioInstagram(user.instagram);
+    if (user.bio) {
+      var pBio = document.getElementById("portfolioBio");
+      if (pBio) pBio.textContent = user.bio;
+    }
     var saved = localStorage.getItem("cm-avatar");
     if (saved) {
       var portfolioAvatar = document.getElementById("portfolioAvatar");
@@ -3253,23 +3385,53 @@ function fmtDate(s) {
       var nome  = (document.getElementById("confNome")||{}).value||"";
       var insta = (document.getElementById("confInstagram")||{}).value||"";
       var bio   = (document.getElementById("confBio")||{}).value||"";
-      if (user) {
-        user.nome = nome.trim() || user.nome;
+      var payload = {
+        nome: nome.trim(),
+        instagram: insta.trim(),
+        bio: bio.trim()
+      };
+
+      function applyLocalUpdate(data) {
+        if (!user) return;
+        user.nome = data.nome || user.nome;
+        user.instagram = data.instagram || null;
+        user.bio = data.bio || null;
         localStorage.setItem("cm-user", JSON.stringify(user));
       }
-      // Atualiza iniciais do avatar se não há foto
-      if (!localStorage.getItem("cm-avatar")) {
-        applyInitials(getInitials(nome.trim() || (user && user.nome)));
+
+      function refreshPortfolio() {
+        if (!localStorage.getItem("cm-avatar")) {
+          var pAvatar = document.getElementById("portfolioAvatar");
+          if (pAvatar) pAvatar.src = "https://via.placeholder.com/120?text=Foto";
+        }
+        var pNome  = document.getElementById("portfolioNome");  if (pNome)  pNome.textContent  = nome || (user&&user.nome) || "Fotógrafo";
+        var pBio   = document.getElementById("portfolioBio");   if (pBio)   pBio.textContent   = bio || "Atualize sua bio em Configurações para apresentar melhor seu trabalho.";
+        renderPortfolioInstagram(insta);
       }
-      var pNome  = document.getElementById("portfolioNome");  if (pNome)  pNome.textContent  = nome || (user&&user.nome) || "Fotógrafo";
-      var pBio   = document.getElementById("portfolioBio");   if (pBio && bio)   pBio.textContent   = bio;
-      renderPortfolioInstagram(insta);
-      // Atualiza foto no portfólio se houver
-      if (!localStorage.getItem("cm-avatar")) {
-        var pAvatar = document.getElementById("portfolioAvatar");
-        if (pAvatar) pAvatar.src = "https://via.placeholder.com/120?text=Foto";
+
+      if (localStorage.getItem("cm-token")) {
+        fetch(API + "/auth/profile", {
+          method: "PUT",
+          headers: authHdr(),
+          body: JSON.stringify(payload)
+        })
+        .then(function(r){ return r.ok ? r.json() : Promise.reject(r); })
+        .then(function(data){
+          var updated = data.fotografo || data;
+          applyLocalUpdate(updated);
+          refreshPortfolio();
+          showToast("Perfil salvo!", "success");
+        })
+        .catch(function(){
+          applyLocalUpdate(payload);
+          refreshPortfolio();
+          showToast("Perfil salvo localmente. Não foi possível atualizar o servidor.", "warning");
+        });
+      } else {
+        applyLocalUpdate(payload);
+        refreshPortfolio();
+        showToast("Perfil salvo localmente.", "success");
       }
-      showToast("Perfil salvo!", "success");
     });
   }
 })();
@@ -3340,8 +3502,18 @@ function fmtDate(s) {
 
   // Salvar agenda
   document.getElementById("toggleDom").addEventListener("change", function() {
+    var status = document.getElementById("toggleDomStatus");
+    if (status) status.textContent = this.checked ? "Ativo" : "Fora da agenda";
     showToast(this.checked ? "Domingo ativado na agenda." : "Domingo bloqueado.", "info");
   });
+
+  var pagamentoToggle = document.getElementById("ensaioPago");
+  if (pagamentoToggle) {
+    pagamentoToggle.addEventListener("change", function() {
+      var status = document.getElementById("ensaioPagoStatus");
+      if (status) status.textContent = this.checked ? "Pago" : "Pendente";
+    });
+  }
 
   // Sincroniza apiStatus nas configurações
   var apiConf = document.getElementById("apiStatusConf");
