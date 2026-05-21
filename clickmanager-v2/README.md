@@ -35,6 +35,7 @@ ClickManagerApi/
   "SmtpHost":        "smtp.gmail.com",
   "SmtpPort":        587,
   "SenderEmail":     "seuemail@gmail.com",
+
   "SenderPassword":  "SUA_SENHA_DE_APP",   ← veja abaixo
   "AdminEmail":      "seuemail@gmail.com"
 }
@@ -64,7 +65,7 @@ dotnet run
 Teste rápido no navegador:
 ```
 http://localhost:5000/api/contact/health
-```
+``
 Deve retornar: `{"status":"online","timestamp":"..."}`
 
 ---
