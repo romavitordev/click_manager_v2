@@ -46,3 +46,6 @@ desktop.ini
 
 ## ── Uploads (gerados em runtime) ─────────────────────────────
 ClickManagerApi/wwwroot/uploads/
+
+## Local test runtimes
+ClickManagerApi.Tests/FunctionalTests/oracleJdk-26/
